@@ -14,7 +14,6 @@
  * Domain Path:       /languages
  *
  * @package iDrivee2Media
- *
  */
 
 declare(strict_types=1);
@@ -24,7 +23,6 @@ namespace iDrivee2Media;
  * Prevent direct access to this file.
  *
  * If this file is called directly, abort execution for security.
- *
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
