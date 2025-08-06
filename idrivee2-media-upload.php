@@ -9,9 +9,17 @@
  * Domain Path:       /languages
  */
 
+/**
+ * Prevent direct access to this file.
+ *
+ * If this file is called directly, abort execution for security.
+ *
+ * @package iDrivee2Media
+ */
 declare(strict_types=1);
 namespace iDrivee2Media;
 
+// Security: prevent direct access.
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -419,105 +427,97 @@ add_action(
 );
 
 /**
- * Uploads attachment files to iDrivee2 after image sizes are generated.
+ * Render the iDrivee2 Media Upload settings page.
  *
- * Pushes the original file and all derived sizes to the configured
- * S3-compatible host, captures the returned ObjectURL for the original,
- * deletes the local copies, updates the attachment’s GUID, and filters
- * the front-end URL to use the S3 ObjectURL.
+ * Displays the current configuration constants (host, access key, secret key,
+ * bucket, region, and optional domain) and provides buttons to test the
+ * S3 connection or upload a test file.
  *
  * @since 0.1.15
  *
- * @param array $meta          Attachment metadata, including 'file' and 'sizes'.
- * @param int   $attachment_id Attachment post ID.
- * @return array               The original metadata array, unmodified.
+ * @return void
  */
-function upload_attachment_to_idrivee2( array $meta, int $attachment_id ): array {
-    // Bail if configuration constants are missing.
-    if (
-        ! defined( 'IDRIVEE2_MEDIA_HOST' ) ||
-        ! defined( 'IDRIVEE2_MEDIA_KEY' ) ||
-        ! defined( 'IDRIVEE2_MEDIA_SECRET' ) ||
-        ! defined( 'IDRIVEE2_MEDIA_BUCKET' ) ||
-        ! defined( 'IDRIVEE2_MEDIA_REGION' )
-    ) {
-        return $meta;
-    }
+function render_settings_page(): void {
+    $host_defined      = defined( 'IDRIVEE2_MEDIA_HOST' );
+    $access_key_defined = defined( 'IDRIVEE2_MEDIA_KEY' );
+    $secret_defined    = defined( 'IDRIVEE2_MEDIA_SECRET' );
+    $bucket_defined    = defined( 'IDRIVEE2_MEDIA_BUCKET' );
+    $region_defined    = defined( 'IDRIVEE2_MEDIA_REGION' );
+    $domain_defined    = defined( 'IDRIVEE2_MEDIA_DOMAIN' );
 
-    // Initialize AWS S3 client.
-    $client = new \Aws\S3\S3Client( [
-        'version'                 => 'latest',
-        'region'                  => IDRIVEE2_MEDIA_REGION,
-        'endpoint'                => IDRIVEE2_MEDIA_HOST,
-        'use_path_style_endpoint' => true,
-        'credentials'             => [
-            'key'    => IDRIVEE2_MEDIA_KEY,
-            'secret' => IDRIVEE2_MEDIA_SECRET,
-        ],
-    ] );
+    $host      = $host_defined       ? IDRIVEE2_MEDIA_HOST      : '';
+    $access_key = $access_key_defined ? IDRIVEE2_MEDIA_KEY       : '';
+    $secret    = $secret_defined     ? IDRIVEE2_MEDIA_SECRET    : '';
+    $bucket    = $bucket_defined     ? IDRIVEE2_MEDIA_BUCKET    : '';
+    $region    = $region_defined     ? IDRIVEE2_MEDIA_REGION    : '';
+    $domain    = $domain_defined     ? IDRIVEE2_MEDIA_DOMAIN    : '';
+    ?>
+    <div class="wrap">
+        <h1><?php esc_html_e( 'iDrivee2 Media Upload Settings', 'idrivee2-media' ); ?></h1>
 
-    // Build list of local files: original + each size.
-    $upload_dir = wp_upload_dir();
-    $base_path  = path_join( $upload_dir['basedir'], $meta['file'] );
-    $files      = [ 'original' => $base_path ];
+        <?php if ( ! $host_defined || ! $access_key_defined || ! $secret_defined || ! $bucket_defined || ! $region_defined ) : ?>
+            <div class="notice notice-error">
+                <p><?php esc_html_e( 'To use iDrivee2 Media Upload, please add these constants to wp-config.php:', 'idrivee2-media' ); ?></p>
+                <p><?php esc_html_e( 'HOST must begin with "https://".', 'idrivee2-media' ); ?></p>
+                <pre>
+define('IDRIVEE2_MEDIA_HOST',   'https://your-s3-host.amazonaws.com');
+define('IDRIVEE2_MEDIA_KEY',    'YOUR_ACCESS_KEY_ID');
+define('IDRIVEE2_MEDIA_SECRET', 'YOUR_SECRET_ACCESS_KEY');
+define('IDRIVEE2_MEDIA_BUCKET', 'your-bucket-name');
+define('IDRIVEE2_MEDIA_REGION', 'us-east-1');</pre>
+            </div>
+        <?php endif; ?>
 
-    if ( ! empty( $meta['sizes'] ) && is_array( $meta['sizes'] ) ) {
-        foreach ( $meta['sizes'] as $size ) {
-            $files[ $size['file'] ] = path_join( dirname( $base_path ), $size['file'] );
-        }
-    }
+        <table class="form-table">
+            <tr>
+                <th><?php esc_html_e( 'Host', 'idrivee2-media' ); ?></th>
+                <td><code><?php echo esc_html( $host ); ?></code></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Access Key', 'idrivee2-media' ); ?></th>
+                <td><code><?php echo esc_html( $access_key ); ?></code></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Secret Key', 'idrivee2-media' ); ?></th>
+                <td><code><?php echo esc_html( str_repeat( '*', strlen( $secret ) ) ); ?></code></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Bucket', 'idrivee2-media' ); ?></th>
+                <td><code><?php echo esc_html( $bucket ); ?></code></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Region', 'idrivee2-media' ); ?></th>
+                <td><code><?php echo esc_html( $region ); ?></code></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Domain', 'idrivee2-media' ); ?></th>
+                <td>
+                    <code>
+                        <?php
+                        echo $domain_defined
+                            ? esc_html( $domain )
+                            : esc_html__( 'Not defined', 'idrivee2-media' );
+                        ?>
+                    </code>
+                </td>
+            </tr>
+        </table>
 
-    $object_url = '';
+        <p>
+            <button id="idrivee2-test-button" class="button button-primary">
+                <?php esc_html_e( 'Test S3 Connection', 'idrivee2-media' ); ?>
+            </button>
+        </p>
+        <p>
+            <button id="idrivee2-upload-button" class="button button-secondary">
+                <?php esc_html_e( 'Upload Test File', 'idrivee2-media' ); ?>
+            </button>
+        </p>
 
-    // Upload each file to iDrivee2 and capture the ObjectURL of the original.
-    foreach ( $files as $key => $local_path ) {
-        if ( ! file_exists( $local_path ) ) {
-            continue;
-        }
-
-        $object_key = 'original' === $key
-            ? $meta['file']
-            : dirname( $meta['file'] ) . '/' . $key;
-
-        try {
-            $result = $client->putObject( [
-                'Bucket' => IDRIVEE2_MEDIA_BUCKET,
-                'Key'    => $object_key,
-                'Body'   => fopen( $local_path, 'rb' ),
-                'ACL'    => 'public-read',
-            ] );
-        } catch ( \Aws\Exception\AwsException $e ) {
-            // Skip this file on error.
-            continue;
-        }
-
-        if ( 'original' === $key && ! empty( $result['ObjectURL'] ) ) {
-            $object_url = $result['ObjectURL'];
-        }
-
-        @unlink( $local_path );
-    }
-
-    // Preserve the relative path in the database.
-    update_post_meta( $attachment_id, '_wp_attached_file', $meta['file'] );
-
-    if ( $object_url ) {
-        // Update the post GUID to point at the S3 URL.
-        wp_update_post( [
-            'ID'   => $attachment_id,
-            'guid' => $object_url,
-        ] );
-
-        // Override the front-end URL to use the S3 ObjectURL.
-        add_filter(
-            'wp_get_attachment_url',
-            function ( string $url, int $id ) use ( $object_url, $attachment_id ): string {
-                return $id === $attachment_id ? $object_url : $url;
-            },
-            10,
-            2
-        );
-    }
-
-    return $meta;
+        <div
+            id="idrivee2-test-result"
+            style="margin-top: 1em; white-space: pre-wrap;"
+        ></div>
+    </div>
+    <?php
 }
