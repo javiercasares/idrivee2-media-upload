@@ -9,5 +9,8 @@
     "psr-4": {
       "iDrivee2Media\\": "src/"
     }
+  },
+  "require-dev": {
+    "eduardovillao/wp-since": "^1.3"
   }
 }
