@@ -3,7 +3,7 @@
  * Plugin Name:       iDrivee2 Media Upload
  * Plugin URI:        https://github.com/javiercasares/idrivee2-media-upload
  * Description:       Uploads media files to iDrivee2 (S3-compatible).
- * Version:           0.1.13
+ * Version:           0.3.0
  * Author:            Javier Casares
  * Text Domain:       idrivee2-media
  * Domain Path:       /languages
@@ -128,18 +128,33 @@ function ajax_upload_test_file(): void
 }
 add_action('wp_ajax_idrivee2_upload_test_file', __NAMESPACE__ . '\\ajax_upload_test_file');
 
-// Hook after metadata generation
-add_filter('wp_generate_attachment_metadata',__NAMESPACE__.'\\upload_attachment_to_idrivee2',10,2);
+
+add_filter( 'pre_option_upload_url_path', function( $value ) {
+    return ( defined('IDRIVEE2_MEDIA_DOMAIN') && IDRIVEE2_MEDIA_DOMAIN )
+        ? untrailingslashit( IDRIVEE2_MEDIA_DOMAIN )
+        : $value;
+} );
+
+
+// Hook into WP’s media processing to push attachments to iDrivee2
+add_filter(
+    'wp_generate_attachment_metadata',
+    __NAMESPACE__ . '\\upload_attachment_to_idrivee2',
+    10,
+    2
+);
+
 /**
- * Uploads generated attachment files to iDrivee2, uses the returned ObjectURL,
- * and deletes local copies.
+ * After WP generates attachment sizes, upload them to iDrivee2,
+ * capture the returned ObjectURL for the original file,
+ * delete the local copies, update the post GUID, and override WP’s URL.
  *
- * @param array $meta Metadata array for the attachment.
- * @param int   $id   Attachment ID.
+ * @param array $meta Attachment metadata (sizes, file path).
+ * @param int   $id   Attachment post ID.
  * @return array      Unchanged metadata.
  */
 function upload_attachment_to_idrivee2(array $meta, int $id): array {
-    // Bail if not configured
+    // Comprueba configuración
     if (
         ! defined('IDRIVEE2_MEDIA_HOST') ||
         ! defined('IDRIVEE2_MEDIA_KEY') ||
@@ -150,7 +165,7 @@ function upload_attachment_to_idrivee2(array $meta, int $id): array {
         return $meta;
     }
 
-    // Initialize S3 client
+    // Cliente S3
     $client = new \Aws\S3\S3Client([
         'version'                 => 'latest',
         'region'                  => IDRIVEE2_MEDIA_REGION,
@@ -162,22 +177,22 @@ function upload_attachment_to_idrivee2(array $meta, int $id): array {
         ],
     ]);
 
-    // Prepare file list: original + sizes
-    $upload_dir = wp_upload_dir();
-    $base_path  = path_join($upload_dir['basedir'], $meta['file']);
-    $files      = ['original' => $base_path];
+    // Lista de ficheros: original + tamaños
+    $u = wp_upload_dir();
+    $base = path_join($u['basedir'], $meta['file']);
+    $files = ['original' => $base];
     foreach ($meta['sizes'] ?? [] as $size) {
-        $files[$size['file']] = path_join(dirname($base_path), $size['file']);
+        $files[$size['file']] = path_join(dirname($base), $size['file']);
     }
 
     $objectUrl = '';
 
-    // Upload each file
+    // Subir cada fichero y capturar ObjectURL del original
     foreach ($files as $key => $path) {
         if (! file_exists($path)) {
             continue;
         }
-        $object_key = $key === 'original'
+        $object_key = ($key === 'original')
             ? $meta['file']
             : dirname($meta['file']) . '/' . $key;
 
@@ -188,26 +203,127 @@ function upload_attachment_to_idrivee2(array $meta, int $id): array {
             'ACL'    => 'public-read',
         ]);
 
-        // For the original file, grab its ObjectURL
-        if ($key === 'original' && isset($result['ObjectURL'])) {
+        if ($key === 'original' && ! empty($result['ObjectURL'])) {
             $objectUrl = $result['ObjectURL'];
         }
 
         @unlink($path);
     }
 
-    // Ensure WP keeps the relative path
+    // Mantén WP con ruta relativa en meta
     update_post_meta($id, '_wp_attached_file', $meta['file']);
 
-    // Override the attachment URL to the S3 ObjectURL
+
+
+
+
+    // Si tenemos ObjectURL, actualiza el GUID y ajusta wp_get_attachment_url
     if ($objectUrl) {
-        add_filter('wp_get_attachment_url', function($url, $pid) use ($objectUrl, $id) {
-            return $pid === $id ? $objectUrl : $url;
-        }, 10, 2);
+        // 1) GUID en wp_posts
+        wp_update_post([
+            'ID'   => $id,
+            'guid' => $objectUrl,
+        ]);
+        // 2) URL en el front-end
+        add_filter(
+            'wp_get_attachment_url',
+            function($url, $pid) use ($objectUrl, $id) {
+                return ($pid === $id) ? $objectUrl : $url;
+            },
+            10,
+            2
+        );
     }
 
     return $meta;
 }
+
+// Hook para procesar la imagen editada (crop/rotate/etc)
+add_filter(
+    'wp_save_image_editor_file',
+    __NAMESPACE__ . '\\upload_edited_image_to_idrivee2',
+    10,
+    3
+);
+
+/**
+ * Cuando WP guarda un archivo de editor de imágenes, súbelo a iDrivee2,
+ * actualiza el guid del attachment y borra el fichero local.
+ *
+ * @param string          $file          Ruta completa al fichero recién guardado.
+ * @param WP_Image_Editor $editor        Instancia del editor (no la usamos aquí).
+ * @param int             $attachment_id ID del attachment.
+ * @return string                        Devuelve siempre $file.
+ */
+function upload_edited_image_to_idrivee2(string $file, $editor, int $attachment_id): string {
+    // Sólo si está todo configurado
+    if (
+        ! defined('IDRIVEE2_MEDIA_HOST') ||
+        ! defined('IDRIVEE2_MEDIA_KEY') ||
+        ! defined('IDRIVEE2_MEDIA_SECRET') ||
+        ! defined('IDRIVEE2_MEDIA_BUCKET') ||
+        ! defined('IDRIVEE2_MEDIA_REGION')
+    ) {
+        return $file;
+    }
+
+    // Construye el cliente S3
+    $client = new \Aws\S3\S3Client([
+        'version'                 => 'latest',
+        'region'                  => IDRIVEE2_MEDIA_REGION,
+        'endpoint'                => IDRIVEE2_MEDIA_HOST,
+        'use_path_style_endpoint' => true,
+        'credentials'             => [
+            'key'    => IDRIVEE2_MEDIA_KEY,
+            'secret' => IDRIVEE2_MEDIA_SECRET,
+        ],
+    ]);
+
+    // Calcula la clave (path dentro del bucket) a partir del upload_dir
+    $upload_dir = wp_upload_dir();
+    $relative   = ltrim( str_replace( $upload_dir['basedir'], '', $file ), '/\\' );
+
+    // Sube al bucket
+    try {
+        $result = $client->putObject([
+            'Bucket' => IDRIVEE2_MEDIA_BUCKET,
+            'Key'    => $relative,
+            'Body'   => fopen( $file, 'rb' ),
+            'ACL'    => 'public-read',
+        ]);
+    } catch (\Exception $e) {
+        // si falla, sólo deja el local
+        return $file;
+    }
+
+    // Captura la URL real del objeto
+    $objectUrl = $result['ObjectURL'] ?? '';
+
+    // Borra local
+    @unlink( $file );
+
+    if ( $objectUrl ) {
+        // 1) Actualiza el GUID en wp_posts para que la Media Library apunte a S3
+        wp_update_post([
+            'ID'   => $attachment_id,
+            'guid' => $objectUrl,
+        ]);
+        // 2) Fuerza wp_get_attachment_url a devolver la URL de S3
+        add_filter(
+            'wp_get_attachment_url',
+            function( $url, $pid ) use ( $objectUrl, $attachment_id ) {
+                return $pid === $attachment_id ? $objectUrl : $url;
+            },
+            10,
+            2
+        );
+    }
+
+    return $file;
+}
+
+
+
 
 /**
  * Render settings page.
