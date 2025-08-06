@@ -135,21 +135,65 @@ add_filter( 'pre_option_upload_url_path', function( $value ) {
         : $value;
 } );
 
+// 1) Siempre devuelve tu dominio al pedir la URL de un attachment
+add_filter( 'wp_get_attachment_url', function( $url, $post_id ) {
+    if ( defined( 'IDRIVEE2_MEDIA_DOMAIN' ) && IDRIVEE2_MEDIA_DOMAIN ) {
+        $uploads = wp_upload_dir();
+        $old_base = untrailingslashit( $uploads['baseurl'] );
+        $new_base = untrailingslashit( IDRIVEE2_MEDIA_DOMAIN );
+        return str_replace( $old_base, $new_base, $url );
+    }
+    return $url;
+}, 1, 2 );
 
-// Hook into WP’s media processing to push attachments to iDrivee2
+// 1) Covers AJAX async-uploads
+add_action('add_attachment', function(int $post_id) {
+    $meta = wp_get_attachment_metadata($post_id);
+    if ($meta) {
+        upload_attachment_to_idrivee2($meta, $post_id);
+    }
+});
+
+// 2) Initial metadata generation
 add_filter(
     'wp_generate_attachment_metadata',
     __NAMESPACE__ . '\\upload_attachment_to_idrivee2',
-    10,
-    2
+    10, 2
 );
 
+// 3) Regenerations / editor “Save”
 add_filter(
     'wp_update_attachment_metadata',
     __NAMESPACE__ . '\\upload_attachment_to_idrivee2',
-    10,
-    2
+    10, 2
 );
+
+// 4) Any edit to the attachment
+add_action('edit_attachment', function(int $post_id) {
+    $meta = wp_get_attachment_metadata($post_id);
+    if ($meta) {
+        upload_attachment_to_idrivee2($meta, $post_id);
+    }
+});
+
+// Hook para reescribir la URL nada más subir (incluye async-upload AJAX)
+add_filter( 'wp_handle_upload', function( array $upload ): array {
+    if (
+        defined('IDRIVEE2_MEDIA_DOMAIN') &&
+        IDRIVEE2_MEDIA_DOMAIN &&
+        ! empty( $upload['url'] )
+    ) {
+        $uploads  = wp_upload_dir();
+        $old_base = untrailingslashit( $uploads['baseurl'] );
+        $new_base = untrailingslashit( IDRIVEE2_MEDIA_DOMAIN );
+        // Sustituye la base local por tu dominio
+        $upload['url'] = str_replace( $old_base, $new_base, $upload['url'] );
+    }
+    return $upload;
+} );
+
+
+
 /**
  * After WP generates attachment sizes, upload them to iDrivee2,
  * capture the returned ObjectURL for the original file,
