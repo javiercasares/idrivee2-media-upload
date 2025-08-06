@@ -9,6 +9,13 @@
  * Domain Path:       /languages
  */
 
+/**
+ * Prevent direct access to this file.
+ *
+ * If this file is called directly, abort execution for security.
+ *
+ * @package iDrivee2Media
+ */
 declare(strict_types=1);
 namespace iDrivee2Media;
 
@@ -17,94 +24,169 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load Composer autoloader if available.
+/**
+ * Load Composer autoloader if available.
+ *
+ * @since 0.1.13
+ */
 $autoload = __DIR__ . '/vendor/autoload.php';
-if (file_exists($autoload)) {
+if ( file_exists( $autoload ) ) {
     require_once $autoload;
 }
 
 /**
- * Load plugin textdomain for translations.
+ * Load the plugin text domain for translations.
+ *
+ * Registers the plugin’s text domain so that translation files in the
+ * /languages directory are loaded on the front end and in the admin.
+ *
+ * @since 0.1.13
+ *
+ * @return void
  */
-function load_textdomain(): void
-{
+function load_textdomain(): void {
     load_plugin_textdomain(
         'idrivee2-media',
         false,
-        dirname(plugin_basename(__FILE__)) . '/languages'
+        dirname( plugin_basename( __FILE__ ) ) . '/languages'
     );
 }
-add_action('plugins_loaded', __NAMESPACE__ . '\\load_textdomain');
+add_action(
+    'plugins_loaded',
+    __NAMESPACE__ . '\load_textdomain',
+    20
+);
 
 /**
- * Register settings page under Media menu.
+ * Register the iDrivee2 settings page under the Media menu.
+ *
+ * Adds a submenu page to the Media section of the admin where users
+ * can view and test their iDrivee2 configuration.
+ *
+ * @since 0.1.13
+ *
+ * @return void
  */
-function register_media_page(): void
-{
+function register_media_page(): void {
     add_media_page(
-        __('iDrivee2', 'idrivee2-media'),
-        __('iDrivee2', 'idrivee2-media'),
+        /* translators: Admin menu title. */
+        __( 'iDrivee2', 'idrivee2-media' ),
+        /* translators: Admin menu label. */
+        __( 'iDrivee2', 'idrivee2-media' ),
         'manage_options',
         'idrivee2-media',
-        __NAMESPACE__ . '\\render_settings_page'
+        __NAMESPACE__ . '\render_settings_page'
     );
 }
-add_action('admin_menu', __NAMESPACE__ . '\\register_media_page');
+add_action(
+    'admin_menu',
+    __NAMESPACE__ . '\register_media_page',
+    20
+);
 
 /**
- * Enqueue admin scripts and localize labels for AJAX.
+ * Enqueue the admin JavaScript and localize script data for AJAX.
+ *
+ * Loads the iDrivee2 admin script on the Media → iDrivee2 settings page
+ * and passes dynamic data such as the AJAX URL, nonces, and button labels.
+ *
+ * @since 0.1.13
+ *
+ * @param string $hook The current admin page hook suffix.
+ * @return void
  */
-function enqueue_admin_scripts(string $hook): void
-{
-    if ($hook !== 'media_page_idrivee2-media') {
+function enqueue_admin_scripts( string $hook ): void {
+    // Only load script on our settings page.
+    if ( 'media_page_idrivee2-media' !== $hook ) {
         return;
     }
 
     wp_enqueue_script(
         'idrivee2-media-admin',
-        plugin_dir_url(__FILE__) . 'assets/admin.js',
-        ['jquery'],
-        '0.1.12',
+        plugin_dir_url( __FILE__ ) . 'assets/admin.js',
+        [ 'jquery' ],
+        '0.1.13',
         true
     );
-    wp_localize_script('idrivee2-media-admin', 'iDrivee2Media', [
-        'ajaxUrl'           => admin_url('admin-ajax.php'),
-        'nonce'             => wp_create_nonce('idrivee2_test_nonce'),
-        'buttonLabel'       => __('Test S3 Connection', 'idrivee2-media'),
-        'testingLabel'      => __('Testing...', 'idrivee2-media'),
-        'uploadButtonLabel' => __('Upload Test File', 'idrivee2-media'),
-        'uploadingLabel'    => __('Uploading…', 'idrivee2-media'),
-        'domain'            => defined('IDRIVEE2_MEDIA_DOMAIN') ? IDRIVEE2_MEDIA_DOMAIN : '',
-    ]);
+
+    wp_localize_script(
+        'idrivee2-media-admin',
+        'iDrivee2Media',
+        [
+            'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
+            'nonce'             => wp_create_nonce( 'idrivee2_test_nonce' ),
+            'buttonLabel'       => __( 'Test S3 Connection', 'idrivee2-media' ),
+            'testingLabel'      => __( 'Testing...', 'idrivee2-media' ),
+            'uploadButtonLabel' => __( 'Upload Test File', 'idrivee2-media' ),
+            'uploadingLabel'    => __( 'Uploading...', 'idrivee2-media' ),
+            'domain'            => defined( 'IDRIVEE2_MEDIA_DOMAIN' ) ? IDRIVEE2_MEDIA_DOMAIN : '',
+        ]
+    );
 }
-add_action('admin_enqueue_scripts', __NAMESPACE__ . '\\enqueue_admin_scripts');
+add_action(
+    'admin_enqueue_scripts',
+    __NAMESPACE__ . '\enqueue_admin_scripts',
+    20
+);
 
 /**
- * AJAX handler for testing S3 connection.
+ * AJAX handler for testing connectivity to the iDrivee2 S3 bucket.
+ *
+ * Verifies that all required constants are defined, then attempts to
+ * perform a HeadBucket call. Returns a JSON success or error message.
+ *
+ * @since 0.1.13
+ *
+ * @return void
  */
-function ajax_test_connection(): void
-{
-    check_ajax_referer('idrivee2_test_nonce', 'nonce');
-    foreach (['IDRIVEE2_MEDIA_HOST','IDRIVEE2_MEDIA_KEY','IDRIVEE2_MEDIA_SECRET','IDRIVEE2_MEDIA_BUCKET','IDRIVEE2_MEDIA_REGION'] as $c) {
-        if (!defined($c)) {
-            wp_send_json_error(sprintf(__('Missing constant %s.', 'idrivee2-media'), $c));
+function ajax_test_connection(): void {
+    check_ajax_referer( 'idrivee2_test_nonce', 'nonce' );
+
+    $required_constants = [
+        'IDRIVEE2_MEDIA_HOST',
+        'IDRIVEE2_MEDIA_KEY',
+        'IDRIVEE2_MEDIA_SECRET',
+        'IDRIVEE2_MEDIA_BUCKET',
+        'IDRIVEE2_MEDIA_REGION',
+    ];
+
+    foreach ( $required_constants as $constant ) {
+        if ( ! defined( $constant ) ) {
+            wp_send_json_error(
+                sprintf(
+                    /* translators: %s is the name of the missing constant. */
+                    __( 'Missing constant %s.', 'idrivee2-media' ),
+                    esc_html( $constant )
+                )
+            );
         }
     }
+
     try {
-        $client = new \Aws\S3\S3Client([
+        $client = new \Aws\S3\S3Client( [
             'version'                 => 'latest',
             'region'                  => IDRIVEE2_MEDIA_REGION,
             'endpoint'                => IDRIVEE2_MEDIA_HOST,
             'use_path_style_endpoint' => true,
-            'credentials'             => ['key'=>IDRIVEE2_MEDIA_KEY,'secret'=>IDRIVEE2_MEDIA_SECRET],
-        ]);
-        $client->headBucket(['Bucket'=>IDRIVEE2_MEDIA_BUCKET]);
-        wp_send_json_success(__('Connection successful.', 'idrivee2-media'));
-    } catch (\Exception $e) {
-        wp_send_json_error($e->getMessage());
+            'credentials'             => [
+                'key'    => IDRIVEE2_MEDIA_KEY,
+                'secret' => IDRIVEE2_MEDIA_SECRET,
+            ],
+        ] );
+
+        $client->headBucket( [ 'Bucket' => IDRIVEE2_MEDIA_BUCKET ] );
+        wp_send_json_success( __( 'Connection successful.', 'idrivee2-media' ) );
+    } catch ( \Aws\Exception\AwsException $e ) {
+        wp_send_json_error( $e->getAwsErrorMessage() );
+    } catch ( \Exception $e ) {
+        wp_send_json_error( $e->getMessage() );
     }
 }
-add_action('wp_ajax_idrivee2_test_connection', __NAMESPACE__ . '\\ajax_test_connection');
+add_action(
+    'wp_ajax_idrivee2_test_connection',
+    __NAMESPACE__ . '\ajax_test_connection',
+    10
+);
 
 /**
  * AJAX handler for uploading a test file.
