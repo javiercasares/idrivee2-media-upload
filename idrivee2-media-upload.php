@@ -217,48 +217,54 @@ function ajax_upload_test_file(): void {
 
 	try {
 		// Initialize the S3 client.
-		$client = new \Aws\S3\S3Client(
-			array(
-				'version'                 => 'latest',
-				'region'                  => IDRIVEE2_MEDIA_REGION,
-				'endpoint'                => IDRIVEE2_MEDIA_HOST,
-				'use_path_style_endpoint' => true,
-				'credentials'             => array(
-					'key'    => IDRIVEE2_MEDIA_KEY,
-					'secret' => IDRIVEE2_MEDIA_SECRET,
-				),
-			)
-		);
+		$client = new \Aws\S3\S3Client( array(
+			'version'                 => 'latest',
+			'region'                  => IDRIVEE2_MEDIA_REGION,
+			'endpoint'                => IDRIVEE2_MEDIA_HOST,
+			'use_path_style_endpoint' => true,
+			'credentials'             => array(
+				'key'    => IDRIVEE2_MEDIA_KEY,
+				'secret' => IDRIVEE2_MEDIA_SECRET,
+			),
+		) );
 
-		// Prepare file for upload.
+		// Prepare file parameters.
 		$tmp_path  = $_FILES['file']['tmp_name'];
-		$file_name = sanitize_file_name( $_FILES['file']['name'] );
+		$file_name = sanitize_file_name( wp_basename( $_FILES['file']['name'] ) );
 
-		// Upload to S3.
-		$result = $client->putObject(
-			array(
-				'Bucket' => IDRIVEE2_MEDIA_BUCKET,
-				'Key'    => $file_name,
-				'Body'   => fopen( $tmp_path, 'rb' ),
-				'ACL'    => 'public-read',
-			)
-		);
+		// Load WP_Filesystem if needed.
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		WP_Filesystem();
+		global $wp_filesystem;
 
-		// Return the full AWS SDK response.
+		// Read file contents via WP_Filesystem.
+		$content = $wp_filesystem->get_contents( $tmp_path );
+		if ( false === $content ) {
+			throw new Exception( sprintf( 'Unable to read temporary file: %s', $tmp_path ) );
+		}
+
+		// Upload to S3 from memory.
+		$result = $client->putObject( array(
+			'Bucket' => IDRIVEE2_MEDIA_BUCKET,
+			'Key'    => $file_name,
+			'Body'   => $content,
+			'ACL'    => 'public-read',
+		) );
+
+		// Send back the AWS SDK response.
 		wp_send_json_success( $result->toArray() );
+
 	} catch ( \Aws\Exception\AwsException $e ) {
-		// AWS-specific exception.
+		// AWS-specific error.
 		wp_send_json_error( $e->getAwsErrorMessage() );
 	} catch ( \Exception $e ) {
-		// General exception.
+		// General error.
 		wp_send_json_error( $e->getMessage() );
 	}
 }
-add_action(
-	'wp_ajax_idrivee2_upload_test_file',
-	__NAMESPACE__ . '\ajax_upload_test_file',
-	10
-);
+add_action( 'wp_ajax_idrivee2_upload_test_file', __NAMESPACE__ . '\ajax_upload_test_file', 10 );
 
 /**
  * Override the upload URL path with the configured iDrivee2 domain.
