@@ -3,7 +3,7 @@
  * Plugin Name:       iDrivee2 Media Upload
  * Plugin URI:        https://github.com/javiercasares/idrivee2-media-upload
  * Description:       Uploads media files to iDrivee2 (S3-compatible).
- * Version:           0.1.2
+ * Version:           0.1.8
  * Author:            Javier Casares
  * Text Domain:       idrivee2-media
  * Domain Path:       /languages
@@ -58,7 +58,6 @@ add_action('admin_menu', __NAMESPACE__ . '\\register_media_page');
  */
 function enqueue_admin_scripts(string $hook): void
 {
-    // Only load on our settings page
     if ($hook !== 'media_page_idrivee2-media') {
         return;
     }
@@ -67,12 +66,14 @@ function enqueue_admin_scripts(string $hook): void
         'idrivee2-media-admin',
         plugin_dir_url(__FILE__) . 'assets/admin.js',
         ['jquery'],
-        '0.1.1',
+        '0.1.8',
         true
     );
     wp_localize_script('idrivee2-media-admin', 'iDrivee2Media', [
-        'ajaxUrl' => admin_url('admin-ajax.php'),
-        'nonce'   => wp_create_nonce('idrivee2_test_nonce'),
+        'ajaxUrl'      => admin_url('admin-ajax.php'),
+        'nonce'        => wp_create_nonce('idrivee2_test_nonce'),
+        'buttonLabel'  => __('Test S3 Connection', 'idrivee2-media'),
+        'testingLabel' => __('Testing...', 'idrivee2-media'),
     ]);
 }
 add_action('admin_enqueue_scripts', __NAMESPACE__ . '\\enqueue_admin_scripts');
@@ -84,14 +85,23 @@ function ajax_test_connection(): void
 {
     check_ajax_referer('idrivee2_test_nonce', 'nonce');
 
-    if (!defined('IDRIVEE2_MEDIA_HOST') || !defined('IDRIVEE2_MEDIA_KEY') || !defined('IDRIVEE2_MEDIA_SECRET')) {
-        wp_send_json_error(__('Configuration constants missing.', 'idrivee2-media'));
+    $required = [
+        'IDRIVEE2_MEDIA_HOST',
+        'IDRIVEE2_MEDIA_KEY',
+        'IDRIVEE2_MEDIA_SECRET',
+        'IDRIVEE2_MEDIA_BUCKET',
+        'IDRIVEE2_MEDIA_REGION',
+    ];
+    foreach ($required as $const) {
+        if (!defined($const)) {
+            wp_send_json_error(sprintf(__('Missing constant %s.', 'idrivee2-media'), $const));
+        }
     }
 
     try {
-        // Instantiate S3 client
         $client = new \Aws\S3\S3Client([
             'version'     => 'latest',
+            'region'      => IDRIVEE2_MEDIA_REGION,
             'endpoint'    => IDRIVEE2_MEDIA_HOST,
             'use_path_style_endpoint' => true,
             'credentials' => [
@@ -99,8 +109,8 @@ function ajax_test_connection(): void
                 'secret' => IDRIVEE2_MEDIA_SECRET,
             ],
         ]);
-        // Attempt list buckets
-        $client->listBuckets();
+        // Optionally, test specific bucket access
+        $client->headBucket(['Bucket' => IDRIVEE2_MEDIA_BUCKET]);
         wp_send_json_success(__('Connection successful.', 'idrivee2-media'));
     } catch (\Exception $e) {
         wp_send_json_error($e->getMessage());
@@ -117,21 +127,28 @@ function render_settings_page(): void
     $hostDefined   = defined('IDRIVEE2_MEDIA_HOST');
     $keyDefined    = defined('IDRIVEE2_MEDIA_KEY');
     $secretDefined = defined('IDRIVEE2_MEDIA_SECRET');
+    $bucketDefined = defined('IDRIVEE2_MEDIA_BUCKET');
+    $regionDefined = defined('IDRIVEE2_MEDIA_REGION');
 
     $host   = $hostDefined   ? IDRIVEE2_MEDIA_HOST   : '';
     $key    = $keyDefined    ? IDRIVEE2_MEDIA_KEY    : '';
     $secret = $secretDefined ? IDRIVEE2_MEDIA_SECRET : '';
+    $bucket = $bucketDefined ? IDRIVEE2_MEDIA_BUCKET : '';
+    $region = $regionDefined ? IDRIVEE2_MEDIA_REGION : '';
     ?>
     <div class="wrap">
         <h1><?php esc_html_e('iDrivee2 Media Upload', 'idrivee2-media'); ?></h1>
 
-        <?php if (!$hostDefined || !$keyDefined || !$secretDefined) : ?>
+        <?php if (!$hostDefined || !$keyDefined || !$secretDefined || !$bucketDefined || !$regionDefined) : ?>
             <div class="notice notice-error">
                 <p><?php esc_html_e('To use iDrivee2 Media Upload, add the following constants to your wp-config.php:', 'idrivee2-media'); ?></p>
+                <p><?php esc_html_e('HOST must begin with "https://"', 'idrivee2-media'); ?></p>
                 <pre>
-define('IDRIVEE2_MEDIA_HOST',  'your-s3-host.amazonaws.com');
-define('IDRIVEE2_MEDIA_KEY',   'YOUR_ACCESS_KEY_ID');
-define('IDRIVEE2_MEDIA_SECRET','YOUR_SECRET_ACCESS_KEY');
+define('IDRIVEE2_MEDIA_HOST',   'https://your-s3-host.amazonaws.com');
+define('IDRIVEE2_MEDIA_KEY',    'YOUR_ACCESS_KEY_ID');
+define('IDRIVEE2_MEDIA_SECRET', 'YOUR_SECRET_ACCESS_KEY');
+define('IDRIVEE2_MEDIA_BUCKET', 'your-bucket-name');
+define('IDRIVEE2_MEDIA_REGION', 'us-east-1');
                 </pre>
             </div>
         <?php else : ?>
@@ -147,6 +164,14 @@ define('IDRIVEE2_MEDIA_SECRET','YOUR_SECRET_ACCESS_KEY');
                 <tr>
                     <th><?php esc_html_e('Secret Key', 'idrivee2-media'); ?></th>
                     <td><code><?php echo str_repeat('*', strlen($secret)); ?></code></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e('Bucket', 'idrivee2-media'); ?></th>
+                    <td><code><?php echo esc_html($bucket); ?></code></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e('Region', 'idrivee2-media'); ?></th>
+                    <td><code><?php echo esc_html($region); ?></code></td>
                 </tr>
             </table>
             <p>
