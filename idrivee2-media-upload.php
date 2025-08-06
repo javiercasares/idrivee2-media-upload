@@ -247,27 +247,27 @@ add_filter(
 );
 
 /**
- * Cuando WP guarda un archivo de editor de imágenes, súbelo a iDrivee2,
- * actualiza el guid del attachment y borra el fichero local.
+ * When the editor writes out a new image file, push it to iDrivee2,
+ * swap the GUID, delete the local copy—and always return the (possibly null) $file.
  *
- * @param string          $file          Ruta completa al fichero recién guardado.
- * @param WP_Image_Editor $editor        Instancia del editor (no la usamos aquí).
- * @param int             $attachment_id ID del attachment.
- * @return string                        Devuelve siempre $file.
+ * @param string|null      $file          Absolute path, or null on failure.
+ * @param WP_Image_Editor  $editor        The image‐editor instance.
+ * @param int              $attachment_id Attachment ID.
+ * @return string|null                     Must return the original $file (or null).
  */
-function upload_edited_image_to_idrivee2(string $file, $editor, int $attachment_id): string {
-    // Sólo si está todo configurado
-    if (
-        ! defined('IDRIVEE2_MEDIA_HOST') ||
-        ! defined('IDRIVEE2_MEDIA_KEY') ||
-        ! defined('IDRIVEE2_MEDIA_SECRET') ||
-        ! defined('IDRIVEE2_MEDIA_BUCKET') ||
-        ! defined('IDRIVEE2_MEDIA_REGION')
+function upload_edited_image_to_idrivee2( $file, $editor, $attachment_id ) {
+    // If no file was saved, or config is missing, do nothing.
+    if ( empty( $file ) || ! is_string( $file )
+      || ! defined('IDRIVEE2_MEDIA_HOST')
+      || ! defined('IDRIVEE2_MEDIA_KEY')
+      || ! defined('IDRIVEE2_MEDIA_SECRET')
+      || ! defined('IDRIVEE2_MEDIA_BUCKET')
+      || ! defined('IDRIVEE2_MEDIA_REGION')
     ) {
         return $file;
     }
 
-    // Construye el cliente S3
+    // Initialize S3 client
     $client = new \Aws\S3\S3Client([
         'version'                 => 'latest',
         'region'                  => IDRIVEE2_MEDIA_REGION,
@@ -279,11 +279,10 @@ function upload_edited_image_to_idrivee2(string $file, $editor, int $attachment_
         ],
     ]);
 
-    // Calcula la clave (path dentro del bucket) a partir del upload_dir
+    // Compute the S3 key from the uploads directory + relative path
     $upload_dir = wp_upload_dir();
     $relative   = ltrim( str_replace( $upload_dir['basedir'], '', $file ), '/\\' );
 
-    // Sube al bucket
     try {
         $result = $client->putObject([
             'Bucket' => IDRIVEE2_MEDIA_BUCKET,
@@ -291,27 +290,26 @@ function upload_edited_image_to_idrivee2(string $file, $editor, int $attachment_
             'Body'   => fopen( $file, 'rb' ),
             'ACL'    => 'public-read',
         ]);
-    } catch (\Exception $e) {
-        // si falla, sólo deja el local
+    } catch ( \Exception $e ) {
+        // on failure, leave the local file in place
         return $file;
     }
 
-    // Captura la URL real del objeto
-    $objectUrl = $result['ObjectURL'] ?? '';
-
-    // Borra local
+    // Remove the local copy
     @unlink( $file );
 
+    // Grab the ObjectURL and update GUID + front‐end URL
+    $objectUrl = $result['ObjectURL'] ?? '';
     if ( $objectUrl ) {
-        // 1) Actualiza el GUID en wp_posts para que la Media Library apunte a S3
+        // Update the post GUID in wp_posts
         wp_update_post([
             'ID'   => $attachment_id,
             'guid' => $objectUrl,
         ]);
-        // 2) Fuerza wp_get_attachment_url a devolver la URL de S3
+        // Override wp_get_attachment_url()
         add_filter(
             'wp_get_attachment_url',
-            function( $url, $pid ) use ( $objectUrl, $attachment_id ) {
+            function ( $url, $pid ) use ( $objectUrl, $attachment_id ) {
                 return $pid === $attachment_id ? $objectUrl : $url;
             },
             10,
@@ -321,7 +319,6 @@ function upload_edited_image_to_idrivee2(string $file, $editor, int $attachment_
 
     return $file;
 }
-
 
 
 
