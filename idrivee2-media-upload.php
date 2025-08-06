@@ -144,6 +144,12 @@ add_filter(
     2
 );
 
+add_filter(
+    'wp_update_attachment_metadata',
+    __NAMESPACE__ . '\\upload_attachment_to_idrivee2',
+    10,
+    2
+);
 /**
  * After WP generates attachment sizes, upload them to iDrivee2,
  * capture the returned ObjectURL for the original file,
@@ -237,90 +243,6 @@ function upload_attachment_to_idrivee2(array $meta, int $id): array {
 
     return $meta;
 }
-
-// Hook para procesar la imagen editada (crop/rotate/etc)
-add_filter(
-    'wp_save_image_editor_file',
-    __NAMESPACE__ . '\\upload_edited_image_to_idrivee2',
-    10,
-    3
-);
-
-/**
- * When the editor writes out a new image file, push it to iDrivee2,
- * swap the GUID, delete the local copy—and always return the (possibly null) $file.
- *
- * @param string|null      $file          Absolute path, or null on failure.
- * @param WP_Image_Editor  $editor        The image‐editor instance.
- * @param int              $attachment_id Attachment ID.
- * @return string|null                     Must return the original $file (or null).
- */
-function upload_edited_image_to_idrivee2( $file, $editor, $attachment_id ) {
-    // If no file was saved, or config is missing, do nothing.
-    if ( empty( $file ) || ! is_string( $file )
-      || ! defined('IDRIVEE2_MEDIA_HOST')
-      || ! defined('IDRIVEE2_MEDIA_KEY')
-      || ! defined('IDRIVEE2_MEDIA_SECRET')
-      || ! defined('IDRIVEE2_MEDIA_BUCKET')
-      || ! defined('IDRIVEE2_MEDIA_REGION')
-    ) {
-        return $file;
-    }
-
-    // Initialize S3 client
-    $client = new \Aws\S3\S3Client([
-        'version'                 => 'latest',
-        'region'                  => IDRIVEE2_MEDIA_REGION,
-        'endpoint'                => IDRIVEE2_MEDIA_HOST,
-        'use_path_style_endpoint' => true,
-        'credentials'             => [
-            'key'    => IDRIVEE2_MEDIA_KEY,
-            'secret' => IDRIVEE2_MEDIA_SECRET,
-        ],
-    ]);
-
-    // Compute the S3 key from the uploads directory + relative path
-    $upload_dir = wp_upload_dir();
-    $relative   = ltrim( str_replace( $upload_dir['basedir'], '', $file ), '/\\' );
-
-    try {
-        $result = $client->putObject([
-            'Bucket' => IDRIVEE2_MEDIA_BUCKET,
-            'Key'    => $relative,
-            'Body'   => fopen( $file, 'rb' ),
-            'ACL'    => 'public-read',
-        ]);
-    } catch ( \Exception $e ) {
-        // on failure, leave the local file in place
-        return $file;
-    }
-
-    // Remove the local copy
-    @unlink( $file );
-
-    // Grab the ObjectURL and update GUID + front‐end URL
-    $objectUrl = $result['ObjectURL'] ?? '';
-    if ( $objectUrl ) {
-        // Update the post GUID in wp_posts
-        wp_update_post([
-            'ID'   => $attachment_id,
-            'guid' => $objectUrl,
-        ]);
-        // Override wp_get_attachment_url()
-        add_filter(
-            'wp_get_attachment_url',
-            function ( $url, $pid ) use ( $objectUrl, $attachment_id ) {
-                return $pid === $attachment_id ? $objectUrl : $url;
-            },
-            10,
-            2
-        );
-    }
-
-    return $file;
-}
-
-
 
 /**
  * Render settings page.
