@@ -1,0 +1,120 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: iDrivee2 Media Upload\n"
+"POT-Creation-Date: 2025-08-06 15:40+0200\n"
+"PO-Revision-Date: 2025-08-06 15:40+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"X-Generator: Poedit 3.6\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-Flags-xgettext: --add-comments=translators:\n"
+"X-Poedit-WPHeader: idrivee2-media-upload.php\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: "
+"__;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.min.js\n"
+"X-Poedit-SearchPathExcluded-1: vendor\n"
+
+#. translators: Admin menu title.
+#. translators: Admin menu label.
+#: idrivee2-media-upload.php:77 idrivee2-media-upload.php:79
+msgid "iDrivee2"
+msgstr ""
+
+#: idrivee2-media-upload.php:122 idrivee2-media-upload.php:524
+msgid "Test S3 Connection"
+msgstr ""
+
+#: idrivee2-media-upload.php:123
+msgid "Testing..."
+msgstr ""
+
+#: idrivee2-media-upload.php:124 idrivee2-media-upload.php:529
+msgid "Upload Test File"
+msgstr ""
+
+#: idrivee2-media-upload.php:125
+msgid "Uploading..."
+msgstr ""
+
+#. translators: %s is the name of the missing constant.
+#: idrivee2-media-upload.php:162
+#, php-format
+msgid "Missing constant %s."
+msgstr ""
+
+#: idrivee2-media-upload.php:184
+msgid "Connection successful."
+msgstr ""
+
+#. translators: Error message when no file is provided.
+#: idrivee2-media-upload.php:215
+msgid "No file provided."
+msgstr ""
+
+#: idrivee2-media-upload.php:472
+msgid "iDrivee2 Media Upload Settings"
+msgstr ""
+
+#: idrivee2-media-upload.php:476
+msgid ""
+"To use iDrivee2 Media Upload, please add these constants to wp-config.php:"
+msgstr ""
+
+#: idrivee2-media-upload.php:477
+msgid "HOST must begin with \"https://\"."
+msgstr ""
+
+#: idrivee2-media-upload.php:489
+msgid "Host"
+msgstr ""
+
+#: idrivee2-media-upload.php:493
+msgid "Access Key"
+msgstr ""
+
+#: idrivee2-media-upload.php:497
+msgid "Secret Key"
+msgstr ""
+
+#: idrivee2-media-upload.php:501
+msgid "Bucket"
+msgstr ""
+
+#: idrivee2-media-upload.php:505
+msgid "Region"
+msgstr ""
+
+#: idrivee2-media-upload.php:509
+msgid "Domain"
+msgstr ""
+
+#: idrivee2-media-upload.php:515
+msgid "Not defined"
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "iDrivee2 Media Upload"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "https://github.com/javiercasares/idrivee2-media-upload"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid "Uploads media files to iDrivee2 (S3-compatible)."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Javier Casares"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "https://www.javiercasares.com/"
+msgstr ""
