@@ -101,7 +101,7 @@ add_action(
  */
 function enqueue_admin_scripts( string $hook ): void {
 	// Only load script on our settings page.
-	if ( 'media_page_idrivee2-media' !== $hook ) {
+	if ( 'media_page_idrivee2-media-upload' !== $hook ) {
 		return;
 	}
 
@@ -210,7 +210,7 @@ function ajax_upload_test_file(): void {
 	check_ajax_referer( 'idrivee2_test_nonce', 'nonce' );
 
 	// Ensure a file was provided.
-	if ( empty( $_FILES['file'] ) || ! is_uploaded_file( $_FILES['file']['tmp_name'] ) ) {
+	if ( empty( $_FILES['file'] ) || ( isset( $_FILES['file']['name'] ) && isset( $_FILES['file']['tmp_name'] ) && ! is_uploaded_file( sanitize_text_field( wp_unslash( $_FILES['file']['tmp_name'] ) ) ) ) ) {
 		/** translators: Error message when no file is provided. */
 		wp_send_json_error( __( 'No file provided.', 'idrivee2-media-upload' ) );
 	}
@@ -229,8 +229,8 @@ function ajax_upload_test_file(): void {
 		) );
 
 		// Prepare file parameters.
-		$tmp_path  = $_FILES['file']['tmp_name'];
-		$file_name = sanitize_file_name( wp_basename( $_FILES['file']['name'] ) );
+		$tmp_path  = sanitize_text_field( wp_unslash( $_FILES['file']['tmp_name'] ) );
+		$file_name = sanitize_file_name( wp_basename( sanitize_text_field( wp_unslash( $_FILES['file']['name'] ) ) ) );
 
 		// Load WP_Filesystem if needed.
 		if ( ! function_exists( 'WP_Filesystem' ) ) {
@@ -343,23 +343,23 @@ function upload_attachment_to_idrivee2( array $meta, int $attachment_id ): array
 	}
 
 	// Initialize the S3 client.
-	$client = new \Aws\S3\S3Client(
-		array(
-			'version'                 => 'latest',
-			'region'                  => IDRIVEE2_MEDIA_REGION,
-			'endpoint'                => IDRIVEE2_MEDIA_HOST,
-			'use_path_style_endpoint' => true,
-			'credentials'             => array(
-				'key'    => IDRIVEE2_MEDIA_KEY,
-				'secret' => IDRIVEE2_MEDIA_SECRET,
-			),
-		)
-	);
+	$client = new \Aws\S3\S3Client( array(
+		'version'                 => 'latest',
+		'region'                  => IDRIVEE2_MEDIA_REGION,
+		'endpoint'                => IDRIVEE2_MEDIA_HOST,
+		'use_path_style_endpoint' => true,
+		'credentials'             => array(
+			'key'    => IDRIVEE2_MEDIA_KEY,
+			'secret' => IDRIVEE2_MEDIA_SECRET,
+		),
+	) );
 
-	// Build list of files: original + each size.
+	// Build list of files: original + each image size.
 	$upload_dir = wp_upload_dir();
 	$base_path  = path_join( $upload_dir['basedir'], $meta['file'] );
-	$files      = array( 'original' => $base_path );
+	$files      = array(
+		'original' => $base_path,
+	);
 
 	if ( ! empty( $meta['sizes'] ) && is_array( $meta['sizes'] ) ) {
 		foreach ( $meta['sizes'] as $size ) {
@@ -369,49 +369,64 @@ function upload_attachment_to_idrivee2( array $meta, int $attachment_id ): array
 
 	$object_url = '';
 
-	// Upload each file and capture the ObjectURL of the original.
+	// Load and initialise WP_Filesystem.
+	if ( ! function_exists( 'WP_Filesystem' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+	}
+	WP_Filesystem();
+	global $wp_filesystem;
+
+	// Upload each file via WP_Filesystem.
 	foreach ( $files as $key => $local_path ) {
-		if ( ! file_exists( $local_path ) ) {
+		// Skip if file doesn't exist.
+		if ( ! $wp_filesystem->exists( $local_path ) ) {
 			continue;
 		}
 
-		$object_key = 'original' === $key
+		// Determine S3 object key.
+		$object_key = ( 'original' === $key )
 			? $meta['file']
 			: dirname( $meta['file'] ) . '/' . $key;
 
-		$result = $client->putObject(
-			array(
-				'Bucket' => IDRIVEE2_MEDIA_BUCKET,
-				'Key'    => $object_key,
-				'Body'   => fopen( $local_path, 'rb' ),
-				'ACL'    => 'public-read',
-			)
-		);
+		// Retrieve file contents via WP_Filesystem.
+		$content = $wp_filesystem->get_contents( $local_path );
+		if ( false === $content ) {
+			// Skip this file if it can't be read.
+			continue;
+		}
 
+		// Upload to S3 from memory.
+		$result = $client->putObject( array(
+			'Bucket' => IDRIVEE2_MEDIA_BUCKET,
+			'Key'    => $object_key,
+			'Body'   => $content,
+			'ACL'    => 'public-read',
+		) );
+
+		// Capture the ObjectURL for the original image.
 		if ( 'original' === $key && ! empty( $result['ObjectURL'] ) ) {
 			$object_url = $result['ObjectURL'];
 		}
 
-		@unlink( $local_path );
+		// Delete local file via WP_Filesystem.
+		$wp_filesystem->delete( $local_path );
 	}
 
-	// Preserve the relative path in the database.
+	// Preserve relative path in database.
 	update_post_meta( $attachment_id, '_wp_attached_file', $meta['file'] );
 
 	if ( $object_url ) {
 		// Update the GUID in wp_posts to the S3 URL.
-		wp_update_post(
-			array(
-				'ID'   => $attachment_id,
-				'guid' => $object_url,
-			)
-		);
+		wp_update_post( array(
+			'ID'   => $attachment_id,
+			'guid' => $object_url,
+		) );
 
-		// Override the front-end URL to use the S3 ObjectURL.
+		// Override front-end URL to use the S3 ObjectURL.
 		add_filter(
 			'wp_get_attachment_url',
 			function ( string $url, int $id ) use ( $object_url, $attachment_id ): string {
-				return $id === $attachment_id ? $object_url : $url;
+				return ( $id === $attachment_id ) ? $object_url : $url;
 			},
 			10,
 			2
