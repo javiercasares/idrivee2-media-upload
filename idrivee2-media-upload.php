@@ -10,7 +10,7 @@
  * Author URI:        https://www.javiercasares.com/
  * License:           GPL-2.0-or-later
  * License URI:       https://spdx.org/licenses/GPL-2.0-or-later.html
- * Text Domain:       idrivee2-media
+ * Text Domain:       idrivee2-media-upload
  * Domain Path:       /languages
  *
  * @package iDrivee2Media
@@ -50,7 +50,7 @@ if ( file_exists( $autoload ) ) {
  */
 function load_textdomain(): void {
 	load_plugin_textdomain(
-		'idrivee2-media',
+		'idrivee2-media-upload',
 		false,
 		dirname( plugin_basename( __FILE__ ) ) . '/languages'
 	);
@@ -74,11 +74,11 @@ add_action(
 function register_media_page(): void {
 	add_media_page(
 		/* translators: Admin menu title. */
-		__( 'iDrivee2', 'idrivee2-media' ),
+		__( 'iDrivee2', 'idrivee2-media-upload' ),
 		/* translators: Admin menu label. */
-		__( 'iDrivee2', 'idrivee2-media' ),
+		__( 'iDrivee2', 'idrivee2-media-upload' ),
 		'manage_options',
-		'idrivee2-media',
+		'idrivee2-media-upload',
 		__NAMESPACE__ . '\render_settings_page'
 	);
 }
@@ -119,10 +119,10 @@ function enqueue_admin_scripts( string $hook ): void {
 		array(
 			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
 			'nonce'             => wp_create_nonce( 'idrivee2_test_nonce' ),
-			'buttonLabel'       => __( 'Test S3 Connection', 'idrivee2-media' ),
-			'testingLabel'      => __( 'Testing...', 'idrivee2-media' ),
-			'uploadButtonLabel' => __( 'Upload Test File', 'idrivee2-media' ),
-			'uploadingLabel'    => __( 'Uploading...', 'idrivee2-media' ),
+			'buttonLabel'       => __( 'Test S3 Connection', 'idrivee2-media-upload' ),
+			'testingLabel'      => __( 'Testing...', 'idrivee2-media-upload' ),
+			'uploadButtonLabel' => __( 'Upload Test File', 'idrivee2-media-upload' ),
+			'uploadingLabel'    => __( 'Uploading...', 'idrivee2-media-upload' ),
 			'domain'            => defined( 'IDRIVEE2_MEDIA_DOMAIN' ) ? IDRIVEE2_MEDIA_DOMAIN : '',
 		)
 	);
@@ -159,7 +159,7 @@ function ajax_test_connection(): void {
 			wp_send_json_error(
 				sprintf(
 					/* translators: %s is the name of the missing constant. */
-					__( 'Missing constant %s.', 'idrivee2-media' ),
+					__( 'Missing constant %s.', 'idrivee2-media-upload' ),
 					esc_html( $constant )
 				)
 			);
@@ -181,7 +181,7 @@ function ajax_test_connection(): void {
 		);
 
 		$client->headBucket( array( 'Bucket' => IDRIVEE2_MEDIA_BUCKET ) );
-		wp_send_json_success( __( 'Connection successful.', 'idrivee2-media' ) );
+		wp_send_json_success( __( 'Connection successful.', 'idrivee2-media-upload' ) );
 	} catch ( \Aws\Exception\AwsException $e ) {
 		wp_send_json_error( $e->getAwsErrorMessage() );
 	} catch ( \Exception $e ) {
@@ -212,7 +212,7 @@ function ajax_upload_test_file(): void {
 	// Ensure a file was provided.
 	if ( empty( $_FILES['file'] ) || ! is_uploaded_file( $_FILES['file']['tmp_name'] ) ) {
 		/** translators: Error message when no file is provided. */
-		wp_send_json_error( __( 'No file provided.', 'idrivee2-media' ) );
+		wp_send_json_error( __( 'No file provided.', 'idrivee2-media-upload' ) );
 	}
 
 	try {
@@ -469,12 +469,12 @@ function render_settings_page(): void {
 	$domain     = $domain_defined ? IDRIVEE2_MEDIA_DOMAIN : '';
 	?>
 	<div class="wrap">
-		<h1><?php esc_html_e( 'iDrivee2 Media Upload Settings', 'idrivee2-media' ); ?></h1>
+		<h1><?php esc_html_e( 'iDrivee2 Media Upload Settings', 'idrivee2-media-upload' ); ?></h1>
 
 		<?php if ( ! $host_defined || ! $access_key_defined || ! $secret_defined || ! $bucket_defined || ! $region_defined ) : ?>
 			<div class="notice notice-error">
-				<p><?php esc_html_e( 'To use iDrivee2 Media Upload, please add these constants to wp-config.php:', 'idrivee2-media' ); ?></p>
-				<p><?php esc_html_e( 'HOST must begin with "https://".', 'idrivee2-media' ); ?></p>
+				<p><?php esc_html_e( 'To use iDrivee2 Media Upload, please add these constants to wp-config.php:', 'idrivee2-media-upload' ); ?></p>
+				<p><?php esc_html_e( 'HOST must begin with "https://".', 'idrivee2-media-upload' ); ?></p>
 				<pre>
 define('IDRIVEE2_MEDIA_HOST',   'https://your-s3-host.amazonaws.com');
 define('IDRIVEE2_MEDIA_KEY',    'YOUR_ACCESS_KEY_ID');
@@ -486,33 +486,33 @@ define('IDRIVEE2_MEDIA_REGION', 'us-east-1');</pre>
 
 		<table class="form-table">
 			<tr>
-				<th><?php esc_html_e( 'Host', 'idrivee2-media' ); ?></th>
+				<th><?php esc_html_e( 'Host', 'idrivee2-media-upload' ); ?></th>
 				<td><code><?php echo esc_html( $host ); ?></code></td>
 			</tr>
 			<tr>
-				<th><?php esc_html_e( 'Access Key', 'idrivee2-media' ); ?></th>
+				<th><?php esc_html_e( 'Access Key', 'idrivee2-media-upload' ); ?></th>
 				<td><code><?php echo esc_html( $access_key ); ?></code></td>
 			</tr>
 			<tr>
-				<th><?php esc_html_e( 'Secret Key', 'idrivee2-media' ); ?></th>
+				<th><?php esc_html_e( 'Secret Key', 'idrivee2-media-upload' ); ?></th>
 				<td><code><?php echo esc_html( str_repeat( '*', strlen( $secret ) ) ); ?></code></td>
 			</tr>
 			<tr>
-				<th><?php esc_html_e( 'Bucket', 'idrivee2-media' ); ?></th>
+				<th><?php esc_html_e( 'Bucket', 'idrivee2-media-upload' ); ?></th>
 				<td><code><?php echo esc_html( $bucket ); ?></code></td>
 			</tr>
 			<tr>
-				<th><?php esc_html_e( 'Region', 'idrivee2-media' ); ?></th>
+				<th><?php esc_html_e( 'Region', 'idrivee2-media-upload' ); ?></th>
 				<td><code><?php echo esc_html( $region ); ?></code></td>
 			</tr>
 			<tr>
-				<th><?php esc_html_e( 'Domain', 'idrivee2-media' ); ?></th>
+				<th><?php esc_html_e( 'Domain', 'idrivee2-media-upload' ); ?></th>
 				<td>
 					<code>
 						<?php
 						echo $domain_defined
 							? esc_html( $domain )
-							: esc_html__( 'Not defined', 'idrivee2-media' );
+							: esc_html__( 'Not defined', 'idrivee2-media-upload' );
 						?>
 					</code>
 				</td>
@@ -521,12 +521,12 @@ define('IDRIVEE2_MEDIA_REGION', 'us-east-1');</pre>
 
 		<p>
 			<button id="idrivee2-test-button" class="button button-primary">
-				<?php esc_html_e( 'Test S3 Connection', 'idrivee2-media' ); ?>
+				<?php esc_html_e( 'Test S3 Connection', 'idrivee2-media-upload' ); ?>
 			</button>
 		</p>
 		<p>
 			<button id="idrivee2-upload-button" class="button button-secondary">
-				<?php esc_html_e( 'Upload Test File', 'idrivee2-media' ); ?>
+				<?php esc_html_e( 'Upload Test File', 'idrivee2-media-upload' ); ?>
 			</button>
 		</p>
 
