@@ -4,22 +4,28 @@
  * Plugin URI:        https://github.com/javiercasares/idrivee2-media-upload
  * Description:       Uploads media files to iDrivee2 (S3-compatible).
  * Version:           0.3.0
+ * Requires at least: 6.8
+ * Requires PHP:      8.2
  * Author:            Javier Casares
+ * Author URI:        https://www.javiercasares.com/
+ * License:           GPL-2.0-or-later
+ * License URI:       https://spdx.org/licenses/GPL-2.0-or-later.html
  * Text Domain:       idrivee2-media
  * Domain Path:       /languages
+ *
+ * @package iDrivee2Media
+ *
  */
+
+declare(strict_types=1);
+namespace iDrivee2Media;
 
 /**
  * Prevent direct access to this file.
  *
  * If this file is called directly, abort execution for security.
  *
- * @package iDrivee2Media
  */
-declare(strict_types=1);
-namespace iDrivee2Media;
-
-// Security: prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
