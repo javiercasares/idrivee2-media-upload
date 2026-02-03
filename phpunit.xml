@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<phpunit
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+	bootstrap="tests/bootstrap.php"
+	colors="true"
+	cacheDirectory=".phpunit.cache"
+	testdox="true"
+	executionOrder="depends,defects"
+	requireCoverageMetadata="false"
+	beStrictAboutCoverageMetadata="true"
+	beStrictAboutOutputDuringTests="true"
+	failOnRisky="true"
+	failOnWarning="true">
+	<testsuites>
+		<testsuite name="Unit Tests">
+			<directory>tests/unit</directory>
+		</testsuite>
+		<testsuite name="Integration Tests">
+			<directory>tests/integration</directory>
+		</testsuite>
+	</testsuites>
+	<coverage includeUncoveredFiles="true">
+		<report>
+			<html outputDirectory="tests/coverage" lowUpperBound="50" highLowerBound="80"/>
+			<text outputFile="php://stdout" showUncoveredFiles="false"/>
+		</report>
+	</coverage>
+	<source>
+		<include>
+			<directory suffix=".php">includes</directory>
+			<file>idrivee2-media-upload.php</file>
+		</include>
+	</source>
+</phpunit>

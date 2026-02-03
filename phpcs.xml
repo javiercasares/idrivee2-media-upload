@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<ruleset name="iDrivee2 Media Upload">
+	<description>Coding standards for iDrivee2 Media Upload plugin</description>
+
+	<!-- Files to check -->
+	<file>.</file>
+
+	<!-- Exclude vendor directory -->
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+
+	<!-- Include WordPress Coding Standards -->
+	<rule ref="WordPress-Core" />
+	<rule ref="WordPress-Docs" />
+	<rule ref="WordPress-Extra" />
+
+	<!-- Allow single-file architecture (multiple classes in one file) -->
+	<rule ref="Generic.Files.OneObjectStructurePerFile">
+		<exclude-pattern>idrivee2-media-upload.php</exclude-pattern>
+	</rule>
+
+	<!-- Allow class file naming in single-file architecture -->
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>idrivee2-media-upload.php</exclude-pattern>
+	</rule>
+
+	<!-- Allow unused parameters in filter/hook callbacks (WordPress requirement) -->
+	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
+		<severity>0</severity>
+	</rule>
+</ruleset>

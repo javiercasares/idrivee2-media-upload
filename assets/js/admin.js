@@ -1,7 +1,16 @@
+/**
+ * IDrivee2 Media Upload - Admin JavaScript.
+ *
+ * Handles AJAX interactions for testing S3 connection and uploading test files.
+ *
+ * @package iDrivee2Media
+ * @since   0.3.0
+ */
+
 (function ($) {
 	$( document ).ready(
 		function () {
-			// Test connection handler
+			// Test connection handler.
 			$( '#idrivee2-test-button' ).on(
 				'click',
 				function (e) {
@@ -51,7 +60,7 @@
 				}
 			);
 
-			// Upload test file handler
+			// Upload test file handler.
 			$( '#idrivee2-upload-button' ).on(
 				'click',
 				function (e) {
@@ -63,7 +72,7 @@
 					$button.prop( 'disabled', true ).text( iDrivee2Media.uploadingLabel );
 					$result.removeClass( 'notice notice-success notice-error' ).text( '' );
 
-					// Create file with content "test"
+					// Create file with content "test".
 					var content = 'test';
 					var blob    = new Blob( [content], { type: 'text/plain' } );
 					var file    = new File( [blob], 'test.txt', { type: 'text/plain' } );
