@@ -33,6 +33,20 @@ class Plugin {
 	private static $instance = null;
 
 	/**
+	 * Logger instance.
+	 *
+	 * @var Logger
+	 */
+	private $logger;
+
+	/**
+	 * Rate limiter instance.
+	 *
+	 * @var Rate_Limiter
+	 */
+	private $rate_limiter;
+
+	/**
 	 * Configuration instance.
 	 *
 	 * @var Config
@@ -84,13 +98,17 @@ class Plugin {
 	private function __construct( string $plugin_file ) {
 		$this->plugin_file = $plugin_file;
 
+		// Initialize logger and rate limiter.
+		$this->logger       = new Logger();
+		$this->rate_limiter = new Rate_Limiter( $this->logger );
+
 		// Initialize configuration and factory.
-		$this->config         = new Config();
+		$this->config         = new Config( $this->logger );
 		$this->client_factory = new S3_Client_Factory( $this->config );
 
 		// Initialize components with dependency injection.
-		$this->admin_page     = new Admin_Page( $this->config, $this->client_factory, $plugin_file );
-		$this->media_uploader = new Media_Uploader( $this->config, $this->client_factory );
+		$this->admin_page     = new Admin_Page( $this->config, $this->client_factory, $this->logger, $this->rate_limiter, $plugin_file );
+		$this->media_uploader = new Media_Uploader( $this->config, $this->client_factory, $this->logger );
 		$this->url_rewriter   = new URL_Rewriter( $this->config );
 	}
 

@@ -40,16 +40,25 @@ class Media_Uploader {
 	private $client_factory;
 
 	/**
+	 * Logger instance.
+	 *
+	 * @var Logger
+	 */
+	private $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 0.3.0
 	 *
 	 * @param Config            $config         Configuration instance.
 	 * @param S3_Client_Factory $client_factory S3 client factory.
+	 * @param Logger            $logger         Logger instance.
 	 */
-	public function __construct( Config $config, S3_Client_Factory $client_factory ) {
+	public function __construct( Config $config, S3_Client_Factory $client_factory, Logger $logger ) {
 		$this->config         = $config;
 		$this->client_factory = $client_factory;
+		$this->logger         = $logger;
 	}
 
 	/**
@@ -75,9 +84,9 @@ class Media_Uploader {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param array $meta           Attachment metadata, including 'file' and 'sizes'.
-	 * @param int   $attachment_id  Attachment post ID.
-	 * @return array                Unchanged metadata array.
+	 * @param array<string, mixed> $meta           Attachment metadata, including 'file' and 'sizes'.
+	 * @param int                  $attachment_id  Attachment post ID.
+	 * @return array<string, mixed>                Unchanged metadata array.
 	 */
 	public function upload_attachment_to_idrivee2( array $meta, int $attachment_id ): array {
 		// Bail if configuration is incomplete.
@@ -114,6 +123,7 @@ class Media_Uploader {
 		foreach ( $files as $key => $local_path ) {
 			// Skip if file doesn't exist.
 			if ( ! $wp_filesystem->exists( $local_path ) ) {
+				$this->logger->warning( 'Media file not found', array( 'path' => $local_path ) );
 				continue;
 			}
 
@@ -126,26 +136,38 @@ class Media_Uploader {
 			$content = $wp_filesystem->get_contents( $local_path );
 			if ( false === $content ) {
 				// Skip this file if it can't be read.
+				$this->logger->error( 'Failed to read media file', array( 'path' => $local_path ) );
 				continue;
 			}
 
 			// Upload to S3 from memory.
-			$result = $client->putObject(
-				array(
-					'Bucket' => $this->config->get_bucket(),
-					'Key'    => $object_key,
-					'Body'   => $content,
-					'ACL'    => 'public-read',
-				)
-			);
+			try {
+				$result = $client->putObject(
+					array(
+						'Bucket' => $this->config->get_bucket(),
+						'Key'    => $object_key,
+						'Body'   => $content,
+						'ACL'    => 'public-read',
+					)
+				);
 
-			// Capture the ObjectURL for the original image.
-			if ( 'original' === $key && ! empty( $result['ObjectURL'] ) ) {
-				$object_url = $result['ObjectURL'];
+				// Log successful upload.
+				$this->logger->s3_operation( 'putObject', true, basename( $object_key ) );
+
+				// Capture the ObjectURL for the original image.
+				if ( 'original' === $key && ! empty( $result['ObjectURL'] ) ) {
+					$object_url = $result['ObjectURL'];
+				}
+
+				// Delete local file via WP_Filesystem.
+				$wp_filesystem->delete( $local_path );
+
+			} catch ( \Aws\Exception\AwsException $e ) {
+				// Log failed upload.
+				$this->logger->s3_operation( 'putObject', false, basename( $object_key ), $e->getAwsErrorMessage() ?? '' );
+				// Continue to next file on error.
+				continue;
 			}
-
-			// Delete local file via WP_Filesystem.
-			$wp_filesystem->delete( $local_path );
 		}
 
 		// Preserve relative path in database.

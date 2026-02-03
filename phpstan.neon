@@ -9,11 +9,6 @@ parameters:
 		- tests/bootstrap.php
 	scanDirectories:
 		- vendor/
-	ignoreErrors:
-		# WordPress uses global variables extensively
-		- '#Variable \$wp_filesystem might not be defined\.#'
-		# Allow dynamic properties in WordPress
-		- '#Access to an undefined property#'
 	excludePaths:
 		- vendor/
 		- tests/

@@ -40,6 +40,20 @@ class Admin_Page {
 	private $client_factory;
 
 	/**
+	 * Logger instance.
+	 *
+	 * @var Logger
+	 */
+	private $logger;
+
+	/**
+	 * Rate limiter instance.
+	 *
+	 * @var Rate_Limiter
+	 */
+	private $rate_limiter;
+
+	/**
 	 * Plugin file path.
 	 *
 	 * @var string
@@ -53,11 +67,15 @@ class Admin_Page {
 	 *
 	 * @param Config            $config         Configuration instance.
 	 * @param S3_Client_Factory $client_factory S3 client factory.
+	 * @param Logger            $logger         Logger instance.
+	 * @param Rate_Limiter      $rate_limiter   Rate limiter instance.
 	 * @param string            $plugin_file    Path to the main plugin file.
 	 */
-	public function __construct( Config $config, S3_Client_Factory $client_factory, string $plugin_file ) {
+	public function __construct( Config $config, S3_Client_Factory $client_factory, Logger $logger, Rate_Limiter $rate_limiter, string $plugin_file ) {
 		$this->config         = $config;
 		$this->client_factory = $client_factory;
+		$this->logger         = $logger;
+		$this->rate_limiter   = $rate_limiter;
 		$this->plugin_file    = $plugin_file;
 	}
 
@@ -174,7 +192,27 @@ class Admin_Page {
 	 * @return void
 	 */
 	private function handle_test_connection(): void {
+		// Check rate limit.
+		if ( $this->rate_limiter->is_rate_limited( 'test_connection', 60 ) ) {
+			$remaining = $this->rate_limiter->get_remaining_time( 'test_connection', 60 );
+			set_transient(
+				'idrivee2_test_result',
+				array(
+					'type'    => 'error',
+					'message' => sprintf(
+						/* translators: %d is the number of seconds to wait. */
+						__( 'Please wait %d seconds before testing again.', 'idrivee2-media-upload' ),
+						$remaining
+					),
+				),
+				30
+			);
+			wp_safe_redirect( admin_url( 'options-general.php?page=idrivee2-media-upload' ) );
+			exit;
+		}
+
 		if ( ! $this->config->is_configured() ) {
+			$this->logger->warning( 'Test connection attempted with incomplete configuration' );
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -187,9 +225,14 @@ class Admin_Page {
 			exit;
 		}
 
+		// Record this action for rate limiting.
+		$this->rate_limiter->record_action( 'test_connection', 60 );
+
 		try {
 			$client = $this->client_factory->create();
 			$client->headBucket( array( 'Bucket' => $this->config->get_bucket() ) );
+
+			$this->logger->s3_operation( 'headBucket', true );
 
 			set_transient(
 				'idrivee2_test_result',
@@ -200,6 +243,8 @@ class Admin_Page {
 				30
 			);
 		} catch ( \Aws\Exception\AwsException $e ) {
+			$this->logger->s3_operation( 'headBucket', false, '', $e->getAwsErrorMessage() ?? '' );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -207,12 +252,14 @@ class Admin_Page {
 					'message' => sprintf(
 						/* translators: %s is the error message from AWS. */
 						__( 'AWS Error: %s', 'idrivee2-media-upload' ),
-						$e->getAwsErrorMessage()
+						$e->getAwsErrorMessage() ?? __( 'Unknown error', 'idrivee2-media-upload' )
 					),
 				),
 				30
 			);
 		} catch ( \Exception $e ) {
+			$this->logger->error( 'Test connection failed: ' . $e->getMessage() );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -239,6 +286,28 @@ class Admin_Page {
 	 * @return void
 	 */
 	private function handle_upload_test(): void {
+		// Check rate limit.
+		if ( $this->rate_limiter->is_rate_limited( 'upload_test', 60 ) ) {
+			$remaining = $this->rate_limiter->get_remaining_time( 'upload_test', 60 );
+			set_transient(
+				'idrivee2_test_result',
+				array(
+					'type'    => 'error',
+					'message' => sprintf(
+						/* translators: %d is the number of seconds to wait. */
+						__( 'Please wait %d seconds before uploading again.', 'idrivee2-media-upload' ),
+						$remaining
+					),
+				),
+				30
+			);
+			wp_safe_redirect( admin_url( 'options-general.php?page=idrivee2-media-upload' ) );
+			exit;
+		}
+
+		// Record this action for rate limiting.
+		$this->rate_limiter->record_action( 'upload_test', 60 );
+
 		try {
 			// Generate timestamp for filename (YYYYMMDDHHMMSS).
 			$timestamp = gmdate( 'YmdHis' );
@@ -260,7 +329,11 @@ class Admin_Page {
 				)
 			);
 
-			$object_url = $result['ObjectURL'] ?? '';
+			// Log successful upload.
+			$this->logger->s3_operation( 'putObject', true, $file_name );
+
+			// Get the public URL - use CDN domain if configured, otherwise S3 ObjectURL.
+			$object_url = $this->get_public_url( $file_name, $result['ObjectURL'] ?? '' );
 
 			set_transient(
 				'idrivee2_test_result',
@@ -274,6 +347,8 @@ class Admin_Page {
 			);
 
 		} catch ( \Aws\Exception\AwsException $e ) {
+			$this->logger->s3_operation( 'putObject', false, $file_name, $e->getAwsErrorMessage() ?? '' );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -281,12 +356,14 @@ class Admin_Page {
 					'message' => sprintf(
 						/* translators: %s is the error message from AWS. */
 						__( 'AWS Error: %s', 'idrivee2-media-upload' ),
-						$e->getAwsErrorMessage()
+						$e->getAwsErrorMessage() ?? __( 'Unknown error', 'idrivee2-media-upload' )
 					),
 				),
 				30
 			);
 		} catch ( \Exception $e ) {
+			$this->logger->error( 'Test upload failed: ' . $e->getMessage() );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -306,6 +383,27 @@ class Admin_Page {
 	}
 
 	/**
+	 * Get the public URL for an uploaded file.
+	 *
+	 * Uses CDN domain if configured, otherwise falls back to S3 ObjectURL.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param string $file_name  The file name/key in S3.
+	 * @param string $object_url The S3 ObjectURL returned by AWS SDK.
+	 * @return string The public URL to access the file.
+	 */
+	private function get_public_url( string $file_name, string $object_url ): string {
+		// If custom domain is configured, use it.
+		if ( $this->config->has_domain() ) {
+			return trailingslashit( $this->config->get_domain() ) . $file_name;
+		}
+
+		// Otherwise, use the S3 ObjectURL.
+		return $object_url;
+	}
+
+	/**
 	 * Handle delete test file action.
 	 *
 	 * @since 0.3.0
@@ -316,6 +414,8 @@ class Admin_Page {
 	private function handle_delete_test( string $file_name ): void {
 		// Validate file name pattern (must be test-YYYYMMDDHHMMSS.txt).
 		if ( ! preg_match( '/^test-\d{14}\.txt$/', $file_name ) ) {
+			$this->logger->warning( 'Invalid test file name format attempted: ' . $file_name );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -340,6 +440,9 @@ class Admin_Page {
 				)
 			);
 
+			// Log successful deletion.
+			$this->logger->s3_operation( 'deleteObject', true, $file_name );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -354,6 +457,8 @@ class Admin_Page {
 			);
 
 		} catch ( \Aws\Exception\AwsException $e ) {
+			$this->logger->s3_operation( 'deleteObject', false, $file_name, $e->getAwsErrorMessage() ?? '' );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(
@@ -361,12 +466,14 @@ class Admin_Page {
 					'message' => sprintf(
 						/* translators: %s is the error message from AWS. */
 						__( 'AWS Error: %s', 'idrivee2-media-upload' ),
-						$e->getAwsErrorMessage()
+						$e->getAwsErrorMessage() ?? __( 'Unknown error', 'idrivee2-media-upload' )
 					),
 				),
 				30
 			);
 		} catch ( \Exception $e ) {
+			$this->logger->error( 'Test file deletion failed: ' . $e->getMessage() );
+
 			set_transient(
 				'idrivee2_test_result',
 				array(

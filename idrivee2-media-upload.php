@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       iDrivee2 Media Upload
  * Plugin URI:        https://github.com/javiercasares/idrivee2-media-upload
- * Description:       Uploads media files to iDrivee2 (S3-compatible).
- * Version:           0.3.0
+ * Description:       Uploads media files to iDrivee2 (S3-compatible) with enterprise-grade security and logging.
+ * Version:           1.0.0
  * Requires at least: 6.8
  * Requires PHP:      8.2
  * Author:            Javier Casares
@@ -44,6 +44,8 @@ if ( file_exists( $autoload ) ) {
  *
  * @since 0.3.0
  */
+require_once __DIR__ . '/includes/class-logger.php';
+require_once __DIR__ . '/includes/class-rate-limiter.php';
 require_once __DIR__ . '/includes/class-config.php';
 require_once __DIR__ . '/includes/class-s3-client-factory.php';
 require_once __DIR__ . '/includes/class-url-rewriter.php';

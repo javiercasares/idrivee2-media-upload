@@ -6,8 +6,11 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'iDrivee2Media\\' => array($baseDir . '/src'),
+    'iDrivee2Media\\Tests\\' => array($baseDir . '/tests'),
+    'iDrivee2Media\\' => array($baseDir . '/includes'),
     'WP_Since\\' => array($vendorDir . '/eduardovillao/wp-since/src'),
+    'SzepeViktor\\PHPStan\\WordPress\\' => array($vendorDir . '/szepeviktor/phpstan-wordpress/src'),
+    'Symfony\\Polyfill\\Php73\\' => array($vendorDir . '/symfony/polyfill-php73'),
     'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
     'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
     'Symfony\\Component\\Filesystem\\' => array($vendorDir . '/symfony/filesystem'),
@@ -19,5 +22,6 @@ return array(
     'GuzzleHttp\\Psr7\\' => array($vendorDir . '/guzzlehttp/psr7/src'),
     'GuzzleHttp\\Promise\\' => array($vendorDir . '/guzzlehttp/promises/src'),
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
+    'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
     'Aws\\' => array($vendorDir . '/aws/aws-sdk-php/src'),
 );

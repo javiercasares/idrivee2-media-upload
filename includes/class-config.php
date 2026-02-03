@@ -47,6 +47,24 @@ class Config {
 	private const OPTION_NAME = 'idrivee2_media_settings';
 
 	/**
+	 * Logger instance.
+	 *
+	 * @var Logger|null
+	 */
+	private $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * @since 0.3.1
+	 *
+	 * @param Logger|null $logger Optional logger instance.
+	 */
+	public function __construct( ?Logger $logger = null ) {
+		$this->logger = $logger;
+	}
+
+	/**
 	 * Check if all required configuration values are available.
 	 *
 	 * Checks both wp-config.php constants and WordPress options.
@@ -204,6 +222,9 @@ class Config {
 	 * @return bool True on success, false on failure.
 	 */
 	public function update_options( array $data ): bool {
+		// Get current options for comparison.
+		$old_options = get_option( self::OPTION_NAME, array() );
+
 		// Validate and sanitize data.
 		$options = array(
 			'host'   => isset( $data['host'] ) ? sanitize_text_field( $data['host'] ) : '',
@@ -213,6 +234,16 @@ class Config {
 			'region' => isset( $data['region'] ) ? sanitize_text_field( $data['region'] ) : '',
 			'domain' => isset( $data['domain'] ) ? sanitize_text_field( $data['domain'] ) : '',
 		);
+
+		// Log configuration changes.
+		if ( $this->logger ) {
+			foreach ( $options as $key => $new_value ) {
+				$old_value = isset( $old_options[ $key ] ) ? $old_options[ $key ] : '';
+				if ( $old_value !== $new_value ) {
+					$this->logger->config_change( $key, $old_value, $new_value );
+				}
+			}
+		}
 
 		return update_option( self::OPTION_NAME, $options );
 	}
