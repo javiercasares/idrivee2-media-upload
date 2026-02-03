@@ -110,7 +110,15 @@ class Media_Uploader {
 			}
 		}
 
-		$object_url = '';
+		$object_url   = '';
+		$s3_base_url  = '';
+		$upload_count = 0;
+
+		// Check if we already processed this attachment to avoid duplicate uploads.
+		$processed = get_post_meta( $attachment_id, '_idrivee2_processed', true );
+		if ( $processed ) {
+			return $meta;
+		}
 
 		// Load and initialise WP_Filesystem.
 		if ( ! function_exists( 'WP_Filesystem' ) ) {
@@ -123,7 +131,6 @@ class Media_Uploader {
 		foreach ( $files as $key => $local_path ) {
 			// Skip if file doesn't exist.
 			if ( ! $wp_filesystem->exists( $local_path ) ) {
-				$this->logger->warning( 'Media file not found', array( 'path' => $local_path ) );
 				continue;
 			}
 
@@ -135,8 +142,6 @@ class Media_Uploader {
 			// Retrieve file contents via WP_Filesystem.
 			$content = $wp_filesystem->get_contents( $local_path );
 			if ( false === $content ) {
-				// Skip this file if it can't be read.
-				$this->logger->error( 'Failed to read media file', array( 'path' => $local_path ) );
 				continue;
 			}
 
@@ -154,13 +159,18 @@ class Media_Uploader {
 				// Log successful upload.
 				$this->logger->s3_operation( 'putObject', true, basename( $object_key ) );
 
-				// Capture the ObjectURL for the original image.
-				if ( 'original' === $key && ! empty( $result['ObjectURL'] ) ) {
-					$object_url = $result['ObjectURL'];
+				// Capture the base URL for constructing CDN URLs.
+				if ( 'original' === $key ) {
+					// Build CDN URL if domain configured, otherwise use S3 URL.
+					if ( $this->config->has_domain() ) {
+						$s3_base_url = trailingslashit( $this->config->get_domain() ) . dirname( $meta['file'] );
+					} elseif ( ! empty( $result['ObjectURL'] ) ) {
+						$object_url  = $result['ObjectURL'];
+						$s3_base_url = dirname( $result['ObjectURL'] );
+					}
 				}
 
-				// Delete local file via WP_Filesystem.
-				$wp_filesystem->delete( $local_path );
+				$upload_count++;
 
 			} catch ( \Aws\Exception\AwsException $e ) {
 				// Log failed upload.
@@ -170,26 +180,35 @@ class Media_Uploader {
 			}
 		}
 
+		// Mark as processed to avoid duplicate uploads.
+		if ( $upload_count > 0 ) {
+			update_post_meta( $attachment_id, '_idrivee2_processed', true );
+			update_post_meta( $attachment_id, '_idrivee2_s3_base_url', $s3_base_url );
+		}
+
 		// Preserve relative path in database.
 		update_post_meta( $attachment_id, '_wp_attached_file', $meta['file'] );
 
-		if ( $object_url ) {
-			// Update the GUID in wp_posts to the S3 URL.
+		// Update GUID to use CDN URL if available, otherwise S3 URL.
+		if ( $s3_base_url ) {
+			$file_name = basename( $meta['file'] );
+			if ( $this->config->has_domain() ) {
+				// Use CDN domain.
+				$public_url = trailingslashit( $this->config->get_domain() ) . $meta['file'];
+			} elseif ( $object_url ) {
+				// Use S3 ObjectURL.
+				$public_url = $object_url;
+			} else {
+				// Fallback: construct from base URL.
+				$public_url = $s3_base_url . '/' . $file_name;
+			}
+
+			// Update the GUID to the public URL.
 			wp_update_post(
 				array(
 					'ID'   => $attachment_id,
-					'guid' => $object_url,
+					'guid' => $public_url,
 				)
-			);
-
-			// Override front-end URL to use the S3 ObjectURL.
-			add_filter(
-				'wp_get_attachment_url',
-				function ( string $url, int $id ) use ( $object_url, $attachment_id ): string {
-					return ( $id === $attachment_id ) ? $object_url : $url;
-				},
-				10,
-				2
 			);
 		}
 
