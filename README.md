@@ -54,9 +54,13 @@ define('IDRIVEE2_MEDIA_DOMAIN', 'https://cdn.yourdomain.com');
 
 ### Testing Configuration
 
-1. Navigate to **Media → iDrivee2** in WordPress admin
-2. Click **"Test S3 Connection"** to verify bucket access
-3. Click **"Upload Test File"** to test file upload capability
+1. Navigate to **Settings → iDrivee2** in WordPress admin
+2. Configure your S3 settings (or they will be read from wp-config.php)
+3. Click **"Test S3 Connection"** to verify bucket access
+4. Click **"Upload Test File"** to test file upload capability
+   - Creates a file named `test-YYYYMMDDHHMMSS.txt` with timestamp
+   - File remains in S3 and can be accessed via the provided URL
+   - You can delete test files individually using the "Delete this file" button
 
 ### Uploading Media
 

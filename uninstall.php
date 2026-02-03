@@ -27,6 +27,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * uncomment the code below. WARNING: This cannot be undone.
  */
 
+// phpcs:disable Squiz.PHP.CommentedOutCode.Found
+
 /*
 // Delete all _wp_attached_file meta that was preserved by this plugin.
 // This is optional as WordPress manages this meta normally.

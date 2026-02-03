@@ -10,9 +10,29 @@ This is a WordPress plugin that uploads media files to iDrivee2 (S3-compatible s
 
 ## Architecture
 
-### Single-File Architecture
+### Class-Based Modular Architecture
 
-This plugin uses a **functional, single-file architecture** with all code in `idrivee2-media-upload.php`. Functions are organized under the `iDrivee2Media` namespace. There are no classes, no `/src` directory structure, and no custom modules.
+This plugin uses a **class-based modular architecture** following WordPress best practices. Classes are organized in separate files under the `includes/` directory with the `iDrivee2Media` namespace.
+
+### File Structure
+
+```
+idrivee2-media-upload/
+├── assets/js/              - JavaScript files
+├── includes/               - PHP classes
+│   ├── class-config.php
+│   ├── class-s3-client-factory.php
+│   ├── class-url-rewriter.php
+│   ├── class-media-uploader.php
+│   ├── class-admin-page.php
+│   └── class-plugin.php
+├── languages/              - Translation files
+├── tests/                  - PHPUnit tests
+│   ├── unit/
+│   ├── integration/
+│   └── bootstrap.php
+└── vendor/                 - Composer dependencies
+```
 
 ### Core Workflow
 
@@ -49,17 +69,31 @@ composer install
 
 This installs:
 - `aws/aws-sdk-php` - For S3 operations
-- Development tools: PHPCS, WPCS, PHPCompatibility
+- Development tools: PHPCS, WPCS, PHPCompatibility, PHPUnit, PHPStan
 
-### Linting
+### Code Quality
+
+Run all code quality checks:
+
+```bash
+composer lint
+```
 
 Run PHPCS to validate code against WordPress Coding Standards:
 
 ```bash
 vendor/bin/phpcs
+# or
+composer phpcs
 ```
 
-The plugin follows WordPress-Core, WordPress-Docs, and WordPress-Extra standards. **Always run PHPCS after making code changes.**
+Run PHPStan for static analysis:
+
+```bash
+vendor/bin/phpstan analyse
+# or
+composer phpstan
+```
 
 Check PHP compatibility (PHP 8.2-8.4):
 
@@ -67,15 +101,29 @@ Check PHP compatibility (PHP 8.2-8.4):
 vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 8.2-
 ```
 
+### Testing
+
+Run PHPUnit tests:
+
+```bash
+vendor/bin/phpunit
+# or
+composer test
+```
+
 ### Deployment
 
-According to AGENTS.md, a `bin/deploy.sh` script should exist to package the plugin for distribution. **This script is currently missing and must be created.**
+Use the deployment script to package the plugin:
 
-The deploy script should:
-- Read version from plugin headers
-- Generate a ZIP file in the parent directory (`wp-content/plugins/`)
-- Exclude: `vendor/` dev dependencies, `.git`, `.gitignore`, `composer.json`, `composer.lock`, `docs/`, `.claude/`, `.codex/`
-- Include: `vendor/` production dependencies (AWS SDK with `--no-dev`)
+```bash
+./bin/deploy.sh
+```
+
+The deploy script:
+- Reads version from plugin headers
+- Generates a ZIP file in the parent directory
+- Excludes dev dependencies, tests, and development files
+- Includes production dependencies only (`composer install --no-dev`)
 
 ## Key Constraints
 
@@ -122,12 +170,23 @@ Per AGENTS.md, test on:
 
 Check `wp-content/debug.log` and browser console for errors. No PHP notices, warnings, or deprecated messages are allowed.
 
-## Known Issues & TODO
+## Completed Improvements (v0.3.0)
 
-1. **Missing `bin/deploy.sh`**: Deployment script required by AGENTS.md does not exist
-2. **No automated tests**: No PHPUnit, integration tests, or CI configuration
-3. **No uninstall.php**: Required by AGENTS.md for data cleanup on uninstall
-4. **Hardcoded version in JS**: `admin.js` version is hardcoded as `'0.1.13'` in `enqueue_admin_scripts()` but plugin is at `0.3.0`
+1. ✅ **Class-based architecture**: Refactored from functional to OOP with dependency injection
+2. ✅ **Modular file structure**: Classes separated into individual files under `includes/`
+3. ✅ **Deployment script**: Created `bin/deploy.sh` for packaging releases
+4. ✅ **Automated tests**: Added PHPUnit test structure with example unit tests
+5. ✅ **Uninstall script**: Created `uninstall.php` for cleanup on uninstall
+6. ✅ **Fixed JS version**: Updated from hardcoded `0.1.13` to dynamic `0.3.0`
+7. ✅ **PHPStan integration**: Added static analysis configuration
+8. ✅ **Composer scripts**: Added `test`, `phpcs`, `phpstan`, and `lint` commands
+
+## TODO
+
+1. **Expand test coverage**: Add more unit and integration tests
+2. **CI/CD pipeline**: Add GitHub Actions for automated testing
+3. **WordPress.org assets**: Create banner and icon images
+4. **Performance testing**: Test with large media libraries
 
 ## Important Notes
 
