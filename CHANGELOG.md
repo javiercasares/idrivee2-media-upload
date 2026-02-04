@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-04
+
+### Changed
+- **Composer Configuration**: Added explicit PHP version requirement (>=8.2) to `composer.json`
+- **Update System**: Updated `update.json` with correct plugin information (replaced example data)
+- **Internationalization**: Fixed Text Domain in `robotstxt-updater.php` to match plugin slug (`idrivee2-media-upload`)
+
+### Fixed
+- ✅ Composer now validates PHP version during dependency installation
+- ✅ Plugin update system correctly identifies the plugin
+- ✅ Translations properly loaded for updater error messages
+
+### Improved
+- **Consistency**: All text domains now consistently use `idrivee2-media-upload`
+- **Documentation**: Update metadata accurately reflects plugin information
+
+---
+
 ## [1.0.0] - 2026-02-03
 
 ### 🎉 First Stable Release
@@ -288,6 +306,7 @@ All functionality remains 100% backward compatible:
 - Configuration via wp-config.php constants
 - Multisite support
 
-[1.0.0]: https://github.com/javiercasares/idrivee2-media-upload/compare/v0.3.0...v1.0.0
-[0.3.0]: https://github.com/javiercasares/idrivee2-media-upload/compare/v0.1.13...v0.3.0
-[0.1.13]: https://github.com/javiercasares/idrivee2-media-upload/releases/tag/v0.1.13
+[1.1.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.0.0...v1.1.0
+[1.0.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v0.3.0...v1.0.0
+[0.3.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v0.1.13...v0.3.0
+[0.1.13]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/releases/tag/v0.1.13

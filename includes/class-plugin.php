@@ -138,10 +138,29 @@ class Plugin {
 		// Load text domain for translations.
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ), 20 );
 
+		// Add custom cron interval.
+		add_filter( 'cron_schedules', array( $this, 'add_cron_intervals' ) );
+
 		// Register component hooks.
 		$this->admin_page->register();
 		$this->media_uploader->register();
 		$this->url_rewriter->register();
+	}
+
+	/**
+	 * Add custom cron intervals.
+	 *
+	 * @since 1.0.1
+	 *
+	 * @param array<string, array<string, mixed>> $schedules Existing schedules.
+	 * @return array<string, array<string, mixed>> Modified schedules.
+	 */
+	public function add_cron_intervals( array $schedules ): array {
+		$schedules['every_five_minutes'] = array(
+			'interval' => 300,
+			'display'  => __( 'Every 5 Minutes', 'idrivee2-media-upload' ),
+		);
+		return $schedules;
 	}
 
 	/**

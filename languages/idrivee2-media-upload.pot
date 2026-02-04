@@ -104,7 +104,7 @@ msgid "iDrivee2 Media Upload"
 msgstr ""
 
 #. Plugin URI of the plugin/theme
-msgid "https://github.com/javiercasares/idrivee2-media-upload"
+msgid "https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload"
 msgstr ""
 
 #. Description of the plugin/theme

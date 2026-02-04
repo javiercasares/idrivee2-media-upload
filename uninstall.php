@@ -20,35 +20,47 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 /**
  * Clean up plugin data.
  *
- * Note: This plugin does not create any custom database tables or options.
- * All data is stored in standard WordPress post meta and attachment metadata.
+ * This removes all custom post meta, options, and scheduled cron events
+ * created by the plugin.
  *
- * If you want to delete all attachment metadata created by this plugin,
- * uncomment the code below. WARNING: This cannot be undone.
+ * WARNING: This action cannot be undone.
  */
-
-// phpcs:disable Squiz.PHP.CommentedOutCode.Found
-
-/*
-// Delete all _wp_attached_file meta that was preserved by this plugin.
-// This is optional as WordPress manages this meta normally.
 
 global $wpdb;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+// Delete all _idrivee2_last_upload post meta.
 $wpdb->query(
 	"DELETE FROM {$wpdb->postmeta}
-	WHERE meta_key = '_wp_attached_file'
-	AND post_id IN (
-		SELECT ID FROM {$wpdb->posts}
-		WHERE post_type = 'attachment'
-	)"
+	WHERE meta_key = '_idrivee2_last_upload'"
 );
+
+// Delete all _idrivee2_s3_base_url post meta.
+$wpdb->query(
+	"DELETE FROM {$wpdb->postmeta}
+	WHERE meta_key = '_idrivee2_s3_base_url'"
+);
+
 // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-*/
+
+// Delete the deletion queue option.
+delete_option( 'idrivee2_deletion_queue' );
+
+// Unschedule the cleanup cron event.
+$timestamp = wp_next_scheduled( 'idrivee2_cleanup_local_files' );
+if ( $timestamp ) {
+	wp_unschedule_event( $timestamp, 'idrivee2_cleanup_local_files' );
+}
+
+// Clear all hooks for this action to prevent any remaining schedules.
+wp_clear_scheduled_hook( 'idrivee2_cleanup_local_files' );
 
 /**
  * Note: Files uploaded to S3 are NOT deleted by this uninstall script.
  * If you want to delete files from S3, you must do so manually using
  * your S3 management console or AWS CLI.
+ *
+ * Local files in wp-content/uploads/ are also NOT deleted, as they are
+ * part of WordPress's standard media library structure.
  */

@@ -1,9 +1,11 @@
 <?php
 /**
  * Plugin Name:       iDrivee2 Media Upload
- * Plugin URI:        https://github.com/javiercasares/idrivee2-media-upload
+ * Plugin URI:        https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload
+ * Gitea Plugin URI:  https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload
+ * Primary Branch:    main
  * Description:       Uploads media files to iDrivee2 (S3-compatible) with enterprise-grade security and logging.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.8
  * Requires PHP:      8.2
  * Author:            Javier Casares
@@ -59,3 +61,7 @@ require_once __DIR__ . '/includes/class-plugin.php';
  * @since 0.3.0
  */
 Plugin::get_instance( __FILE__ )->init();
+
+// Initialize ROBOTSTXT updater (auto-configures from plugin headers).
+require_once __DIR__ . '/robotstxt-updater.php';
+Robotstxt_Updater::init( __FILE__ );

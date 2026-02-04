@@ -69,9 +69,18 @@ class Media_Uploader {
 	 * @return void
 	 */
 	public function register(): void {
-		add_filter( 'wp_generate_attachment_metadata', array( $this, 'upload_attachment_to_idrivee2' ), 10, 2 );
-		add_filter( 'wp_update_attachment_metadata', array( $this, 'upload_attachment_to_idrivee2' ), 10, 2 );
+		// Use wp_update_attachment_metadata with high priority to ensure thumbnails are generated.
+		// Priority 999 ensures this runs AFTER all thumbnail generation is complete.
+		add_filter( 'wp_update_attachment_metadata', array( $this, 'upload_attachment_to_idrivee2' ), 999, 2 );
 		add_action( 'edit_attachment', array( $this, 'handle_edit_attachment' ) );
+
+		// Register cron job for cleaning up local files.
+		add_action( 'idrivee2_cleanup_local_files', array( $this, 'cleanup_local_files' ) );
+
+		// Schedule cron if not already scheduled.
+		if ( ! wp_next_scheduled( 'idrivee2_cleanup_local_files' ) ) {
+			wp_schedule_event( time(), 'every_five_minutes', 'idrivee2_cleanup_local_files' );
+		}
 	}
 
 	/**
@@ -110,15 +119,19 @@ class Media_Uploader {
 			}
 		}
 
+		// Log file list for debugging.
+		$this->logger->info(
+			sprintf( 'Preparing to upload %d files to S3', count( $files ) ),
+			array(
+				'attachment_id' => $attachment_id,
+				'original'      => basename( $meta['file'] ),
+				'sizes_count'   => count( $meta['sizes'] ?? array() ),
+			)
+		);
+
 		$object_url   = '';
 		$s3_base_url  = '';
 		$upload_count = 0;
-
-		// Check if we already processed this attachment to avoid duplicate uploads.
-		$processed = get_post_meta( $attachment_id, '_idrivee2_processed', true );
-		if ( $processed ) {
-			return $meta;
-		}
 
 		// Load and initialise WP_Filesystem.
 		if ( ! function_exists( 'WP_Filesystem' ) ) {
@@ -131,6 +144,13 @@ class Media_Uploader {
 		foreach ( $files as $key => $local_path ) {
 			// Skip if file doesn't exist.
 			if ( ! $wp_filesystem->exists( $local_path ) ) {
+				$this->logger->warning(
+					'File does not exist, skipping upload',
+					array(
+						'key'  => $key,
+						'path' => $local_path,
+					)
+				);
 				continue;
 			}
 
@@ -139,11 +159,57 @@ class Media_Uploader {
 				? $meta['file']
 				: dirname( $meta['file'] ) . '/' . $key;
 
+			// Check if file already exists in S3.
+			try {
+				$exists = $client->headObject(
+					array(
+						'Bucket' => $this->config->get_bucket(),
+						'Key'    => $object_key,
+					)
+				);
+				// File exists, skip upload.
+				$this->logger->info(
+					sprintf( 'File already exists in S3, skipping: %s', basename( $object_key ) ),
+					array( 'object_key' => $object_key )
+				);
+				continue;
+			} catch ( \Aws\Exception\AwsException $e ) {
+				// File doesn't exist (404), proceed with upload.
+				if ( 404 !== $e->getStatusCode() ) {
+					// Other error, log and skip.
+					$this->logger->warning(
+						sprintf( 'Error checking S3 file existence: %s', basename( $object_key ) ),
+						array(
+							'object_key' => $object_key,
+							'error'      => $e->getAwsErrorMessage() ?? '',
+						)
+					);
+					continue;
+				}
+			}
+
 			// Retrieve file contents via WP_Filesystem.
 			$content = $wp_filesystem->get_contents( $local_path );
 			if ( false === $content ) {
+				$this->logger->warning(
+					'Failed to read file contents, skipping upload',
+					array(
+						'key'        => $key,
+						'path'       => $local_path,
+						'object_key' => $object_key,
+					)
+				);
 				continue;
 			}
+
+			$this->logger->info(
+				sprintf( 'Uploading to S3: %s', basename( $object_key ) ),
+				array(
+					'object_key'  => $object_key,
+					'file_size'   => strlen( $content ),
+					'is_original' => ( 'original' === $key ),
+				)
+			);
 
 			// Upload to S3 from memory.
 			try {
@@ -180,10 +246,23 @@ class Media_Uploader {
 			}
 		}
 
-		// Mark as processed to avoid duplicate uploads.
+		// Log upload summary.
+		$this->logger->info(
+			sprintf( 'Upload complete: %d of %d files uploaded to S3', $upload_count, count( $files ) ),
+			array(
+				'attachment_id' => $attachment_id,
+				'uploaded'      => $upload_count,
+				'expected'      => count( $files ),
+			)
+		);
+
+		// Update metadata and schedule deletion if files were uploaded.
 		if ( $upload_count > 0 ) {
-			update_post_meta( $attachment_id, '_idrivee2_processed', true );
 			update_post_meta( $attachment_id, '_idrivee2_s3_base_url', $s3_base_url );
+			update_post_meta( $attachment_id, '_idrivee2_last_upload', time() );
+
+			// Schedule local files for deletion after 3 minutes.
+			$this->schedule_files_for_deletion( array_values( $files ) );
 		}
 
 		// Preserve relative path in database.
@@ -227,6 +306,105 @@ class Media_Uploader {
 		$meta = wp_get_attachment_metadata( $post_id );
 		if ( $meta ) {
 			$this->upload_attachment_to_idrivee2( $meta, $post_id );
+		}
+	}
+
+	/**
+	 * Schedule files for deletion.
+	 *
+	 * Adds files to a deletion queue with timestamp. Files will be deleted
+	 * by the cron job after 3 minutes to give WordPress time to process.
+	 *
+	 * @since 1.0.1
+	 *
+	 * @param array<string> $files Array of file paths to delete.
+	 * @return void
+	 */
+	private function schedule_files_for_deletion( array $files ): void {
+		$queue = get_option( 'idrivee2_deletion_queue', array() );
+
+		foreach ( $files as $file_path ) {
+			$queue[] = array(
+				'path'      => $file_path,
+				'timestamp' => time(),
+			);
+		}
+
+		update_option( 'idrivee2_deletion_queue', $queue, false );
+	}
+
+	/**
+	 * Clean up local files that were uploaded to S3.
+	 *
+	 * This method runs via WP-Cron every 5 minutes. It deletes files that:
+	 * - Were uploaded to S3 successfully
+	 * - Have been in the queue for at least 3 minutes
+	 *
+	 * The 3-minute delay ensures WordPress has time to display thumbnails
+	 * in the admin before files are removed.
+	 *
+	 * @since 1.0.1
+	 *
+	 * @return void
+	 */
+	public function cleanup_local_files(): void {
+		$queue = get_option( 'idrivee2_deletion_queue', array() );
+
+		if ( empty( $queue ) ) {
+			return;
+		}
+
+		// Load and initialise WP_Filesystem.
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		WP_Filesystem();
+		global $wp_filesystem;
+
+		$current_time = time();
+		$new_queue    = array();
+		$deleted      = 0;
+
+		foreach ( $queue as $item ) {
+			$file_path = $item['path'];
+			$timestamp = $item['timestamp'];
+
+			// Only delete files older than 3 minutes.
+			if ( ( $current_time - $timestamp ) < 180 ) {
+				$new_queue[] = $item;
+				continue;
+			}
+
+			// Delete the file if it exists.
+			if ( $wp_filesystem->exists( $file_path ) ) {
+				$result = $wp_filesystem->delete( $file_path );
+				if ( $result ) {
+					$deleted++;
+					$this->logger->info(
+						'Local file deleted after S3 upload',
+						array( 'path' => basename( $file_path ) )
+					);
+				} else {
+					// Keep in queue to retry later.
+					$new_queue[] = $item;
+					$this->logger->warning(
+						'Failed to delete local file, will retry',
+						array( 'path' => $file_path )
+					);
+				}
+			}
+			// If file doesn't exist, consider it successfully cleaned up (don't re-add to queue).
+		}
+
+		// Update the queue.
+		update_option( 'idrivee2_deletion_queue', $new_queue, false );
+
+		// Log cleanup summary if any files were deleted.
+		if ( $deleted > 0 ) {
+			$this->logger->info(
+				sprintf( 'Cleanup completed: %d files deleted', $deleted ),
+				array( 'remaining' => count( $new_queue ) )
+			);
 		}
 	}
 }

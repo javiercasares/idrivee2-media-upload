@@ -1,6 +1,6 @@
 # iDrivee2 Media Upload
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Requires:** WordPress 6.8+, PHP 8.2+
 **License:** GPL-2.0-or-later
 **Security Rating:** A+ (Excellent)
@@ -262,7 +262,7 @@ define('WP_DEBUG_DISPLAY', false); // Don't display errors on screen
 
 ## Support
 
-- **Issues**: https://github.com/javiercasares/idrivee2-media-upload/issues
+- **Issues**: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/issues
 - **Documentation**: See CLAUDE.md and AGENTS.md for developer documentation
 
 ## License
@@ -274,6 +274,15 @@ GPL-2.0-or-later
 Javier Casares - https://www.javiercasares.com/
 
 ## Changelog
+
+### 1.1.0 (2026-02-04)
+
+**Configuration and consistency improvements**
+
+- ✅ Added explicit PHP >=8.2 requirement to composer.json
+- ✅ Fixed update.json with correct plugin information
+- ✅ Fixed Text Domain consistency in robotstxt-updater.php
+- ✅ Improved documentation and metadata accuracy
 
 ### 1.0.0 (2026-02-03) 🎉 First Stable Release
 

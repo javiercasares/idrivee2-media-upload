@@ -268,7 +268,7 @@ git push origin v1.0.0
 
 ### Create GitHub Release
 
-1. Go to: https://github.com/javiercasares/idrivee2-media-upload/releases/new
+1. Go to: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/releases/new
 2. Tag version: `v1.0.0`
 3. Release title: `v1.0.0 - First Stable Release`
 4. Description: Copy from `CHANGELOG.md` → v1.0.0 section
@@ -344,7 +344,7 @@ chmod +x bin/deploy.sh
 
 ## Support
 
-- **Issues**: https://github.com/javiercasares/idrivee2-media-upload/issues
+- **Issues**: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/issues
 - **Documentation**: See `README.md` in the repository
 - **Security**: See `docs/SECURITY-AUDIT.md`
 - **Quality**: See `docs/QUALITY-REPORT.md`
