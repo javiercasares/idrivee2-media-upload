@@ -1,0 +1,211 @@
+== Changelog ==
+
+= 1.1.1 =
+
+_Release date: 2026-02-04_
+
+**Highlights**
+
+* Deployment script improvements to ensure production packages are complete
+
+**Fixed**
+
+* Deployment script now includes essential files in production packages
+* update.json (auto-update system) now included in deploy
+* robotstxt-updater.php (auto-update handler) now included in deploy
+* readme.txt (WordPress.org documentation) now included in deploy
+* changelog.txt (full changelog) now included in deploy
+* Updated script documentation and output messages
+
+**Improved**
+
+* Production packages now contain all files required for automatic updates from Gitea
+* Deploy script version updated to 1.1.0
+
+**Compatibility**
+
+* WordPress: 6.8 - 6.9
+* PHP: 8.2 - 8.4
+* MariaDB: 10.6+
+
+**Tests**
+
+* PHP Coding Standards: 0 errors
+* WordPress Coding Standards (WPCS): 3.3
+* PHPStan: Level 8 (0 errors)
+* PHPCompatibility: 8.2-8.4
+
+= 1.1.0 =
+
+_Release date: 2026-02-04_
+
+**Highlights**
+
+* Configuration and consistency improvements for PHP 8.2+ compatibility
+* Updated plugin repository URLs to Gitea
+* Fixed text domain consistency across all files
+
+**Changed**
+
+* Added explicit PHP version requirement (>=8.2) to composer.json
+* Updated update.json with correct plugin information
+* Fixed Text Domain in robotstxt-updater.php to match plugin slug (idrivee2-media-upload)
+* Migrated repository from GitHub to Gitea (git.robotstxt.es)
+* Added Gitea Plugin URI and Primary Branch headers
+
+**Fixed**
+
+* Composer now validates PHP version during dependency installation
+* Plugin update system correctly identifies the plugin
+* Translations properly loaded for updater error messages
+
+**Improved**
+
+* All text domains now consistently use 'idrivee2-media-upload'
+* Update metadata accurately reflects plugin information
+
+**Compatibility**
+
+* WordPress: 6.8 - 6.9
+* PHP: 8.2 - 8.4
+* MariaDB: 10.6+
+
+**Tests**
+
+* PHP Coding Standards: 0 errors
+* WordPress Coding Standards (WPCS): 3.3
+* PHPStan: Level 8 (0 errors)
+* PHPCompatibility: 8.2-8.4
+
+= 1.0.0 =
+
+_Release date: 2026-02-03_
+
+**Highlights**
+
+* First stable production-ready release
+* Enterprise-grade security with comprehensive logging
+* OWASP Top 10 (2021) compliance
+* PHPStan level 8 compliance with zero errors
+* Security rating: A+ (Excellent)
+
+**Added**
+
+* Security logging system with comprehensive audit trail
+* Rate limiting protection (60s users, 30s admins)
+* S3 operation statistics tracking (30-day retention)
+* Logger class for security and operations logging
+* Rate_Limiter class for abuse prevention
+* Comprehensive security audit documentation (7,500+ lines)
+* Code quality report with metrics (3,200+ lines)
+
+**Changed**
+
+* Capability checks switched from role checks to manage_options
+* Type safety with strict type hints throughout
+* Error messages now user-friendly with translations
+* Admin interface shows rate limit feedback
+
+**Fixed**
+
+* All 17 PHPStan level 8 type safety issues resolved
+* Array type specifications added to all methods
+* Null handling for AWS error messages
+* Return type declarations match actual returns
+* All capability checks use manage_options
+
+**Security**
+
+* OWASP Top 10 (2021) 100% compliance
+* Enhanced nonce validation
+* Comprehensive input sanitization and output escaping
+* Security logging for all critical operations
+* Rate limiting to prevent brute force attacks
+
+**Compatibility**
+
+* WordPress: 6.8 - 6.9
+* PHP: 8.2 - 8.4
+* MariaDB: 10.6+
+
+**Tests**
+
+* PHP Coding Standards: 0 errors
+* WordPress Coding Standards (WPCS): 3.3
+* PHPStan: Level 8 (0 errors)
+* PHPCompatibility: 8.2-8.4
+
+= 0.3.0 =
+
+_Release date: 2025-02-03_
+
+**Highlights**
+
+* Complete refactoring to class-based architecture
+* Modular file structure with dependency injection
+* Added PHPUnit test framework
+* Moved from Media to Settings menu
+
+**Added**
+
+* Settings page in WordPress Admin (Settings → iDrivee2)
+* Timestamped test files (test-YYYYMMDDHHMMSS.txt)
+* Persistent test files with delete capability
+* Database-stored configuration option
+* Hybrid configuration (wp-config.php + database)
+* Class-based architecture with 6 classes
+* PHPUnit test structure
+* PHPStan static analysis
+* Deployment script (bin/deploy.sh)
+* Uninstall script
+* Composer scripts (test, phpcs, phpstan, lint)
+
+**Changed**
+
+* Menu location from Media → iDrivee2 to Settings → iDrivee2
+* Architecture from functional to object-oriented
+* JavaScript version from hardcoded to dynamic
+
+**Fixed**
+
+* Code duplication eliminated (7 instances)
+* WordPress Coding Standards violations
+* PHP compatibility issues
+* Type safety with strict declarations
+
+**Compatibility**
+
+* WordPress: 6.7 - 6.9
+* PHP: 8.2 - 8.4
+* MariaDB: 10.6+
+
+**Tests**
+
+* PHP Coding Standards: 0 errors
+* WordPress Coding Standards (WPCS): 3.3
+* PHPStan: Basic structure added
+* PHPCompatibility: 8.2+
+
+= 0.1.13 =
+
+_Release date: 2024-XX-XX_
+
+**Highlights**
+
+* Initial public release
+* Basic S3-compatible storage integration
+
+**Added**
+
+* Automatic media upload to S3
+* Local file deletion after upload
+* CDN URL rewriting
+* WordPress admin testing interface
+* Configuration via wp-config.php constants
+* Multisite support
+
+**Compatibility**
+
+* WordPress: 6.5+
+* PHP: 7.4+
+* MariaDB: 10.6+

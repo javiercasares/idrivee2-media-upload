@@ -1,6 +1,6 @@
 # iDrivee2 Media Upload
 
-**Version:** 1.1.0
+**Version:** 1.1.1
 **Requires:** WordPress 6.8+, PHP 8.2+
 **License:** GPL-2.0-or-later
 **Security Rating:** A+ (Excellent)
@@ -271,7 +271,7 @@ GPL-2.0-or-later
 
 ## Author
 
-Javier Casares - https://www.javiercasares.com/
+ROBOTSTXT - https://www.robotstxt.es/
 
 ## Changelog
 

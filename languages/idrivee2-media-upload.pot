@@ -112,9 +112,9 @@ msgid "Uploads media files to iDrivee2 (S3-compatible)."
 msgstr ""
 
 #. Author of the plugin/theme
-msgid "Javier Casares"
+msgid "ROBOTSTXT"
 msgstr ""
 
 #. Author URI of the plugin/theme
-msgid "https://www.javiercasares.com/"
+msgid "https://www.robotstxt.es/"
 msgstr ""

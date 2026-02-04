@@ -1,5 +1,5 @@
 {
-  "name": "javiercasares/idrivee2-media-upload",
+  "name": "robotstxt/idrivee2-media-upload",
   "description": "Upload media files to iDrivee2 (S3-compatible)",
   "type": "wordpress-plugin",
   "require": {

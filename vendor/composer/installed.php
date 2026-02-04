@@ -3,7 +3,7 @@
         'name' => 'javiercasares/idrivee2-media-upload',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '758c667aed0ce75fdafa62357cf9c5d8b6d1beae',
+        'reference' => 'ce690d2ae28f4364878953c73e3aa3c88642d599',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -76,7 +76,7 @@
         'javiercasares/idrivee2-media-upload' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '758c667aed0ce75fdafa62357cf9c5d8b6d1beae',
+            'reference' => 'ce690d2ae28f4364878953c73e3aa3c88642d599',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

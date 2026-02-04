@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-04
+
+### Fixed
+- **Deployment Script**: Updated `bin/deploy.sh` to include essential files in production packages
+  - Now includes `update.json` (auto-update system)
+  - Now includes `robotstxt-updater.php` (auto-update handler)
+  - Now includes `readme.txt` (WordPress.org documentation)
+  - Now includes `changelog.txt` (full changelog)
+  - Updated script documentation and output messages
+
+### Improved
+- **Auto-updates**: Production packages now contain all files required for automatic updates from Gitea
+
+---
+
 ## [1.1.0] - 2026-02-04
 
 ### Changed
@@ -306,6 +321,7 @@ All functionality remains 100% backward compatible:
 - Configuration via wp-config.php constants
 - Multisite support
 
+[1.1.1]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.1.0...v1.1.1
 [1.1.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.0.0...v1.1.0
 [1.0.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v0.3.0...v1.0.0
 [0.3.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v0.1.13...v0.3.0

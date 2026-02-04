@@ -1,5 +1,5 @@
 === TITULO ===
-Contributors: javiercasares
+Contributors: robotstxt, javiercasares
 Tags: a, b, c
 Requires at least: 4.7
 Tested up to: 6.9

@@ -13,6 +13,10 @@
 #   - vendor/ directory (production dependencies ONLY)
 #   - uninstall.php (cleanup script)
 #   - LICENSE file
+#   - readme.txt (WordPress.org documentation)
+#   - changelog.txt (full changelog)
+#   - update.json (auto-update system)
+#   - robotstxt-updater.php (auto-update system)
 #
 # What gets excluded:
 #   - All markdown files (*.md)
@@ -29,7 +33,7 @@
 #
 # @package iDrivee2Media
 # @since   0.3.0
-# @version 1.0.0
+# @version 1.1.0
 ###############################################################################
 
 set -e
@@ -173,11 +177,35 @@ if [ -f "$PLUGIN_DIR/LICENSE" ]; then
     echo "✓ LICENSE"
 fi
 
+# Copy update.json (required for auto-updates).
+if [ -f "$PLUGIN_DIR/update.json" ]; then
+    cp "$PLUGIN_DIR/update.json" "$BUILD_DIR/"
+    echo "✓ update.json (auto-update system)"
+fi
+
+# Copy robotstxt-updater.php (required for auto-updates).
+if [ -f "$PLUGIN_DIR/robotstxt-updater.php" ]; then
+    cp "$PLUGIN_DIR/robotstxt-updater.php" "$BUILD_DIR/"
+    echo "✓ robotstxt-updater.php (auto-update system)"
+fi
+
+# Copy readme.txt (WordPress.org documentation).
+if [ -f "$PLUGIN_DIR/readme.txt" ]; then
+    cp "$PLUGIN_DIR/readme.txt" "$BUILD_DIR/"
+    echo "✓ readme.txt (WordPress.org documentation)"
+fi
+
+# Copy changelog.txt (full changelog).
+if [ -f "$PLUGIN_DIR/changelog.txt" ]; then
+    cp "$PLUGIN_DIR/changelog.txt" "$BUILD_DIR/"
+    echo "✓ changelog.txt (full changelog)"
+fi
+
 # Create a production-only readme.txt for WordPress.org (if doesn't exist).
 if [ ! -f "$BUILD_DIR/readme.txt" ]; then
     cat > "$BUILD_DIR/readme.txt" << 'READMETXT'
 === iDrivee2 Media Upload ===
-Contributors: javiercasares
+Contributors: robotstxt, javiercasares
 Tags: s3, cdn, media, upload, storage
 Requires at least: 6.8
 Tested up to: 6.9
@@ -323,6 +351,9 @@ echo "  ✓ Production dependencies (vendor/)"
 echo "  ✓ Uninstall script"
 echo "  ✓ LICENSE file"
 echo "  ✓ readme.txt (WordPress.org format)"
+echo "  ✓ changelog.txt (full changelog)"
+echo "  ✓ update.json (auto-update system)"
+echo "  ✓ robotstxt-updater.php (auto-update system)"
 echo ""
 echo -e "${GREEN}What's excluded:${NC}"
 echo "  ✗ Documentation files (*.md, docs/)"
