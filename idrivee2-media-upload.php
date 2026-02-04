@@ -5,13 +5,13 @@
  * Gitea Plugin URI:  https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload
  * Primary Branch:    main
  * Description:       Uploads media files to iDrivee2 (S3-compatible) with enterprise-grade security and logging.
- * Version:           1.1.1
+ * Version:           1.1.2
  * Requires at least: 6.8
  * Requires PHP:      8.2
  * Author:            ROBOTSTXT
  * Author URI:        https://www.robotstxt.es/
- * License:           GPL-2.0-or-later
- * License URI:       https://spdx.org/licenses/GPL-2.0-or-later.html
+ * License:           GPL-3.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-3.0.txt
  * Text Domain:       idrivee2-media-upload
  * Domain Path:       /languages
  * Network:           true

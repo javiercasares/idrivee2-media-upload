@@ -26,7 +26,7 @@ The deployment script creates a **clean, production-only** ZIP file containing:
 ### Core Files ✅
 - `idrivee2-media-upload.php` - Main plugin file (v1.0.0)
 - `uninstall.php` - Cleanup script
-- `LICENSE` - GPL-2.0-or-later
+- `LICENSE` - GPL-3.0-or-later
 
 ### Directories ✅
 - `includes/` - 8 PHP classes

@@ -1,8 +1,8 @@
 # iDrivee2 Media Upload
 
-**Version:** 1.1.1
+**Version:** 1.1.2
 **Requires:** WordPress 6.8+, PHP 8.2+
-**License:** GPL-2.0-or-later
+**License:** GPL-3.0-or-later
 **Security Rating:** A+ (Excellent)
 
 WordPress plugin that uploads media files to iDrivee2 (S3-compatible storage), deletes local copies, and serves media from a CDN. Enterprise-grade security with comprehensive logging and rate limiting.

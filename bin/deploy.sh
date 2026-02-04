@@ -114,11 +114,15 @@ if [ -f "composer.lock" ]; then
     cp composer.lock composer.lock.backup
 fi
 
-# Install only production dependencies (--no-dev excludes dev dependencies).
-composer install --no-dev --optimize-autoloader --no-interaction --quiet
+# Set platform PHP version to 8.2 for consistent builds.
+composer config platform.php 8.2 --quiet
+
+# Update and install only production dependencies (--no-dev excludes dev dependencies).
+# Using update ensures we get the latest compatible versions for PHP 8.2+.
+composer update --no-dev --optimize-autoloader --no-interaction --quiet
 
 if [ $? -eq 0 ]; then
-    echo "✓ Production dependencies installed"
+    echo "✓ Production dependencies installed (PHP 8.2+ compatible)"
 else
     echo -e "${RED}✗ Failed to install dependencies${NC}"
     exit 1
@@ -211,8 +215,8 @@ Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 8.2
 Stable tag: 1.0.0
-License: GPL-2.0-or-later
-License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
+License: GPL-3.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-3.0.txt
 
 Uploads media files to iDrivee2 (S3-compatible storage) with enterprise-grade security and logging.
 
@@ -308,6 +312,9 @@ echo -e "${GREEN}Step 5/6: Restoring development environment...${NC}"
 echo -e "${BLUE}══════════════════════════════════════════════════════════════${NC}"
 
 cd "$PLUGIN_DIR"
+
+# Remove temporary platform PHP configuration.
+composer config --unset platform.php --quiet
 
 # Restore composer.lock if we backed it up.
 if [ -f "composer.lock.backup" ]; then

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-02-04
+
+### Changed
+- **Deployment Script**: Updated to use PHP 8.2 as platform base for production builds
+  - Now uses `composer update --no-dev` instead of `composer install --no-dev`
+  - Temporarily configures `platform.php 8.2` during build for consistent dependency resolution
+  - Ensures production packages are compatible with PHP 8.2+
+  - Cleans up platform configuration after build
+
+### Improved
+- **Build Consistency**: Production packages now guarantee PHP 8.2+ compatibility regardless of development environment PHP version
+- **Dependency Management**: Using `composer update` ensures latest compatible versions for target PHP version
+
+---
+
 ## [1.1.1] - 2026-02-04
 
 ### Fixed
@@ -169,7 +184,7 @@ This marks the first production-ready release with enterprise-grade security, co
 - ✅ Data validation and sanitization implemented
 - ✅ Output escaping throughout
 - ✅ No deprecated functions
-- ✅ GPL-2.0-or-later license
+- ✅ GPL-3.0-or-later license
 - ✅ Text domain matches plugin slug
 - ✅ No external CDN dependencies
 - ✅ All functions/classes prefixed
@@ -321,6 +336,7 @@ All functionality remains 100% backward compatible:
 - Configuration via wp-config.php constants
 - Multisite support
 
+[1.1.2]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.1.1...v1.1.2
 [1.1.1]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.1.0...v1.1.1
 [1.1.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.0.0...v1.1.0
 [1.0.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v0.3.0...v1.0.0

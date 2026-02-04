@@ -3,11 +3,11 @@ Contributors: robotstxt, javiercasares
 Tags: media, upload, s3, cdn, storage, idrivee2, cloud
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 Requires PHP: 8.2
-Version: 1.1.1
-License: GPL-2.0-or-later
-License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
+Version: 1.1.2
+License: GPL-3.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-3.0.txt
 
 Upload media files to iDrivee2 (S3-compatible storage) with enterprise-grade security and logging.
 
@@ -192,6 +192,21 @@ PHP 8.2 or higher is required. The plugin uses strict type declarations and is t
 * PHPCompatibility: 8.2-8.4 (fully compatible)
 
 == Changelog ==
+
+= 1.1.2 =
+
+_Release date: 2026-02-04_
+
+**Changed**
+
+* Deployment script updated to use PHP 8.2 as platform base for production builds
+* Now uses composer update --no-dev instead of composer install --no-dev for consistent dependency resolution
+* Temporarily configures platform.php 8.2 during build, then cleans up
+
+**Improved**
+
+* Production packages now guarantee PHP 8.2+ compatibility regardless of development environment PHP version
+* Build consistency ensures reliable deployments across different server environments
 
 = 1.1.1 =
 

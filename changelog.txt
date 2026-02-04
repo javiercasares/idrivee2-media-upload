@@ -1,5 +1,41 @@
 == Changelog ==
 
+= 1.1.2 =
+
+_Release date: 2026-02-04_
+
+**Highlights**
+
+* Build system improvements for consistent PHP 8.2+ deployments
+
+**Changed**
+
+* Deployment script updated to use PHP 8.2 as platform base for production builds
+* Now uses `composer update --no-dev` instead of `composer install --no-dev`
+* Temporarily configures `platform.php 8.2` during build for consistent dependency resolution
+* Platform configuration cleaned up after build completes
+* Deploy script updated to bin/deploy.sh version 1.1.0
+
+**Improved**
+
+* Production packages now guarantee PHP 8.2+ compatibility regardless of development environment PHP version
+* Build consistency ensures reliable deployments across different server environments with varying PHP versions
+* Using `composer update` ensures latest compatible versions for target PHP version
+* Dependency resolution is consistent and predictable
+
+**Compatibility**
+
+* WordPress: 6.8 - 6.9
+* PHP: 8.2 - 8.4
+* MariaDB: 10.6+
+
+**Tests**
+
+* PHP Coding Standards: 0 errors
+* WordPress Coding Standards (WPCS): 3.3
+* PHPStan: Level 8 (0 errors)
+* PHPCompatibility: 8.2-8.4
+
 = 1.1.1 =
 
 _Release date: 2026-02-04_
