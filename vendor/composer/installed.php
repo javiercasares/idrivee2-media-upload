@@ -3,7 +3,7 @@
         'name' => 'robotstxt/idrivee2-media-upload',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '5bd6cdf5de0ac3ca9c9fc38fe3276a0fcdf3d200',
+        'reference' => 'abe4c29424bdd5f37c9f39f1350e6dbf6644cfc4',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -292,7 +292,7 @@
         'robotstxt/idrivee2-media-upload' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '5bd6cdf5de0ac3ca9c9fc38fe3276a0fcdf3d200',
+            'reference' => 'abe4c29424bdd5f37c9f39f1350e6dbf6644cfc4',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

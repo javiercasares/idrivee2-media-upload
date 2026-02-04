@@ -1,6 +1,6 @@
 # iDrivee2 Media Upload
 
-**Version:** 1.1.2
+**Version:** 1.1.3
 **Requires:** WordPress 6.8+, PHP 8.2+
 **License:** GPL-3.0-or-later
 **Security Rating:** A+ (Excellent)
@@ -274,6 +274,30 @@ GPL-2.0-or-later
 ROBOTSTXT - https://www.robotstxt.es/
 
 ## Changelog
+
+### 1.1.3 (2026-02-04)
+
+**Critical bug fix**
+
+- ✅ Fixed fatal error with Robotstxt_Updater class namespace
+- ✅ Plugin now loads correctly without PHP errors
+
+### 1.1.2 (2026-02-04)
+
+**Build system improvements**
+
+- ✅ Deployment script updated to use PHP 8.2 as platform base
+- ✅ Now uses `composer update --no-dev` for consistent dependency resolution
+- ✅ Production packages guarantee PHP 8.2+ compatibility
+- ✅ Temporary platform configuration cleaned up after build
+
+### 1.1.1 (2026-02-04)
+
+**Deployment improvements**
+
+- ✅ Fixed deployment script to include essential files
+- ✅ Production packages now include update.json, robotstxt-updater.php, readme.txt, changelog.txt
+- ✅ Auto-update system now fully functional in deployed packages
 
 ### 1.1.0 (2026-02-04)
 

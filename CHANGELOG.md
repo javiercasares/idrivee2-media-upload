@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-02-04
+
+### Fixed
+- **Critical Bug**: Fixed namespace issue with `Robotstxt_Updater` class causing fatal error
+  - Added global namespace prefix `\` to `Robotstxt_Updater::init()` call
+  - Resolves "Class 'iDrivee2Media\Robotstxt_Updater' not found" fatal error
+  - Plugin now loads correctly without PHP fatal errors
+
+---
+
 ## [1.1.2] - 2026-02-04
 
 ### Changed
@@ -336,6 +346,7 @@ All functionality remains 100% backward compatible:
 - Configuration via wp-config.php constants
 - Multisite support
 
+[1.1.3]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.1.2...v1.1.3
 [1.1.2]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.1.1...v1.1.2
 [1.1.1]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.1.0...v1.1.1
 [1.1.0]: https://git.robotstxt.es/ROBOTSTXT/idrivee2-media-upload/compare/v1.0.0...v1.1.0

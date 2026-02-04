@@ -3,9 +3,9 @@ Contributors: robotstxt, javiercasares
 Tags: media, upload, s3, cdn, storage, idrivee2, cloud
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 Requires PHP: 8.2
-Version: 1.1.2
+Version: 1.1.3
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.txt
 
